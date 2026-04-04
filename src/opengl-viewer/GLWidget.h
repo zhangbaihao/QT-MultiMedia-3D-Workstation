@@ -1,7 +1,7 @@
 #ifndef GLWIDGET_H
 #define GLWIDGET_H
 
-#include <QtWidgets/QOpenGLWidget>
+#include <QOpenGLWidget>
 #include <QOpenGLFunctions_3_3_Core>
 #include <QMouseEvent>
 #include <QWheelEvent>

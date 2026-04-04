@@ -1,10 +1,9 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import Qt.labs.platform 1.1
+import QtQuick.Dialogs
 import QtQuick3D
 import QtQuick3D.AssetUtils
-import QtMultiMedia3D 1.0
 
 Page {
     objectName: "model3d"
@@ -17,7 +16,6 @@ Page {
     
     onCurrentFileChanged: {
         console.log("QML: currentFile 变更为:", currentFile)
-        console.log("QML: currentFile 长度:", currentFile.length)
         if (currentFile) {
             modelStatus = "加载中"
         } else {
@@ -56,7 +54,7 @@ Page {
 
                     // 标题
                     Label {
-                        text: "3D模型控制"
+                        text: "3D模型控制 (OpenGL)"
                         font.pixelSize: 20
                         font.weight: Font.Bold
                         color: "#333333"
@@ -76,19 +74,6 @@ Page {
                                 Layout.fillWidth: true
                                 text: "📂 选择模型文件"
                                 font.pixelSize: 14
-
-                                background: Rectangle {
-                                    color: parent.pressed ? "#005a9e" : "#0078d4"
-                                    radius: 8
-                                }
-
-                                contentItem: Text {
-                                    text: parent.text
-                                    font: parent.font
-                                    color: "#ffffff"
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                }
 
                                 onClicked: {
                                     console.log("QML: 用户点击了选择模型文件按钮")
@@ -131,9 +116,6 @@ Page {
                                         radius: 8
                                         border.color: modelColor === modelData ? "#333333" : "transparent"
                                         border.width: 2
-                                        Behavior on border.color {
-                                            ColorAnimation { duration: 200 }
-                                        }
 
                                         MouseArea {
                                             anchors.fill: parent
@@ -147,27 +129,6 @@ Page {
                                             onClicked: modelColor = modelData
                                         }
                                     }
-                                }
-                            }
-
-                            // 自定义颜色
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 10
-
-                                Label {
-                                    text: "自定义:"
-                                    font.pixelSize: 12
-                                    color: "#666666"
-                                }
-
-                                Rectangle {
-                                    Layout.preferredWidth: 40
-                                    Layout.preferredHeight: 30
-                                    color: modelColor
-                                    radius: 6
-                                    border.color: "#cccccc"
-                                    border.width: 1
                                 }
                             }
                         }
@@ -227,8 +188,6 @@ Page {
                                 flat: true
 
                                 onClicked: {
-                                    camera.position = Qt.vector3d(0, 0, 10)
-                                    camera.rotation = Qt.vector3d(0, 0, 0)
                                     zoom = 1.0
                                     zoomSlider.value = 1.0
                                     autoRotate = false
@@ -268,29 +227,12 @@ Page {
                         }
                     }
 
-                    // 渲染选项
-                    GroupBox {
-                        Layout.fillWidth: true
-                        title: "渲染选项"
-                        font.pixelSize: 14
-
-                        ColumnLayout {
-                            anchors.fill: parent
-                            spacing: 10
-
-                            CheckBox { text: "显示网格"; checked: true }
-                            CheckBox { text: "显示法线"; checked: false }
-                            CheckBox { text: "线框模式"; checked: false }
-                            CheckBox { text: "双面渲染"; checked: true }
-                        }
-                    }
-
                     Item { Layout.fillHeight: true }
                 }
             }
         }
 
-        // 右侧3D视图
+        // 右侧3D视图 要使用     qmlRegisterType<GLWidget>("CustomComponents", 1, 0, "GLWidget");注册一个widgetOpengl 然后import CustomComponents 使用
         Rectangle {
             id: viewport3D
             Layout.fillWidth: true
@@ -298,45 +240,17 @@ Page {
             color: "#1e1e1e"
             radius: 16
 
-            View3D {
+            // 暂时使用简单的Rectangle代替View3D
+            Rectangle {
                 anchors.fill: parent
-                camera: camera
-
-                PerspectiveCamera {
-                    id: camera
-                    position: Qt.vector3d(0, 0, 10)
-                    fieldOfView: 45
-                }
-
-                DirectionalLight {
-                    id: light
-                    position: Qt.vector3d(5, 5, 5)
-                }
-
-                // 使用Qt Quick 3D内置的模型加载功能
-                Model {
-                    id: model
-                    source: currentFile
-                    materials: [material]
-                    scale: Qt.vector3d(zoom, zoom, zoom)
-                    visible: currentFile !== ""
-                    
-                    onSourceChanged: {
-                        console.log("QML: Model source 变更为:", source)
-                        modelStatus = "加载中"
-                    }
-                    
-                    Component.onCompleted: {
-                        console.log("QML: Model 组件完成初始化")
-                        if (currentFile) {
-                            modelStatus = "已加载"
-                        }
-                    }
-                }
-
-                DefaultMaterial {
-                    id: material
-                    diffuseColor: modelColor
+                color: modelColor
+                opacity: 0.5
+                
+                Label {
+                    text: "OpenGL 3D View"
+                    font.pixelSize: 20
+                    color: "#ffffff"
+                    anchors.centerIn: parent
                 }
             }
 
@@ -356,15 +270,6 @@ Page {
                 onPositionChanged: function(mouse) {
                     var dx = mouse.x - lastX
                     var dy = mouse.y - lastY
-                    if (pressedButtons & Qt.LeftButton) {
-                        // 旋转相机
-                        camera.rotation.x -= dy * 0.5
-                        camera.rotation.y += dx * 0.5
-                    } else if (pressedButtons & Qt.RightButton) {
-                        // 平移相机
-                        camera.position.x -= dx * 0.01
-                        camera.position.y += dy * 0.01
-                    }
                     lastX = mouse.x
                     lastY = mouse.y
                 }
@@ -417,57 +322,20 @@ Page {
                     }
                 }
             }
-
-            // 坐标轴指示器
-            Rectangle {
-                anchors.left: parent.left
-                anchors.top: parent.top
-                anchors.margins: 20
-                width: 80
-                height: 80
-                color: "#000000"
-                radius: 12
-                opacity: 0.5
-
-                Label {
-                    anchors.centerIn: parent
-                    text: "X Y Z"
-                    font.pixelSize: 14
-                    font.weight: Font.Bold
-                    color: "#ffffff"
-                }
-            }
         }
     }
 
-    // 文件对话框 - 使用 Qt.labs.platform 1.1
+    // 文件对话框
     FileDialog {
         id: fileDialog
         title: "选择3D模型文件"
-        folder: StandardPaths.writableLocation(StandardPaths.DocumentsLocation)
+        folder: "file:///C:/Users/24242/Documents"
         nameFilters: ["3D模型文件 (*.stl *.ply *.obj)", "所有文件 (*)"]
         
         onAccepted: {
             console.log("QML: 文件对话框被接受")
-            console.log("QML: fileDialog.file type:", typeof fileDialog.file)
-            console.log("QML: fileDialog.file:", fileDialog.file)
-            
-            // 确保获取正确的文件URL格式
-            var fileUrl = ""
-            if (fileDialog.file && fileDialog.file.toString) {
-                fileUrl = fileDialog.file.toString()
-                console.log("QML: 获取文件URL:", fileUrl)
-            } else if (fileDialog.files && fileDialog.files.length > 0) {
-                // 尝试使用files数组
-                fileUrl = fileDialog.files[0].toString()
-                console.log("QML: 从files数组获取文件URL:", fileUrl)
-            }
-            
-            console.log("QML: 最终文件URL:", fileUrl)
-            
-            // 同时更新 currentFile 以便在界面上显示和加载模型
-            currentFile = fileUrl
-            console.log("QML: 更新 currentFile 为:", currentFile)
+            console.log("QML: fileDialog.fileUrl:", fileDialog.fileUrl)
+            currentFile = fileDialog.fileUrl
         }
         
         onRejected: {

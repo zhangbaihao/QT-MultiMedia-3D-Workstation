@@ -6,7 +6,9 @@
         <file>qml/HomePage.qml</file>
         <file>qml/ModelViewerPage.qml</file>
         <file>qml/ModelViewerOpenglPage.qml</file>
+        <file>qml/ModelViewerOpenGLPage.qml</file>
         <file>qml/VideoPlayerPage.qml</file>
         <file>qml/ControlsPage.qml</file>
+        <file>qml/TestPage.qml</file>
     </qresource>
 </RCC>
