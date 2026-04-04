@@ -2,27 +2,22 @@
 #include <QDebug>
 
 VideoPlayer::VideoPlayer(QObject *parent)
-    : QObject(parent)
+    : QMediaPlayer(parent)
     , m_isPlaying(false)
     , m_duration(0)
     , m_position(0)
-    , m_formatCtx(nullptr)
-    , m_codecCtx(nullptr)
-    , m_videoStream(nullptr)
-    , m_swsCtx(nullptr)
-    , m_videoStreamIndex(-1)
-    , m_stopThread(false)
 {
-    initializeFFmpeg();
-    m_decodeThread = new QThread();
-    connect(m_decodeThread, &QThread::started, this, &VideoPlayer::decodeThread);
-    connect(m_decodeThread, &QThread::finished, m_decodeThread, &QThread::deleteLater);
+    // 连接信号
+    connect(this, &QMediaPlayer::mediaStatusChanged, this, &VideoPlayer::onMediaStatusChanged);
+    connect(this, &QMediaPlayer::positionChanged, this, &VideoPlayer::onPositionChanged);
+    connect(this, &QMediaPlayer::durationChanged, this, &VideoPlayer::onDurationChanged);
+    
+    qDebug() << "VideoPlayer initialized";
 }
 
 VideoPlayer::~VideoPlayer()
 {
     stop();
-    cleanupFFmpeg();
 }
 
 QString VideoPlayer::filePath() const
@@ -37,12 +32,13 @@ void VideoPlayer::setFilePath(const QString &path)
         m_filePath = path;
         emit filePathChanged();
         
-        // 打开文件并获取信息
-        if (openFile())
-        {
-            m_duration = 10000; // 模拟10秒视频
-            emit durationChanged();
-        }
+        // 停止当前播放
+        stop();
+        
+        // 设置媒体源
+        setSource(QUrl::fromLocalFile(m_filePath));
+        
+        qDebug() << "File set:" << m_filePath;
     }
 }
 
@@ -63,10 +59,9 @@ int VideoPlayer::position() const
 
 void VideoPlayer::setPosition(int position)
 {
-    if (m_position != position && m_formatCtx)
+    if (m_position != position)
     {
-        m_position = position;
-        emit positionChanged();
+        QMediaPlayer::setPosition(position);
     }
 }
 
@@ -74,19 +69,10 @@ void VideoPlayer::play()
 {
     if (!m_isPlaying && !m_filePath.isEmpty())
     {
-        if (!m_formatCtx && !openFile())
-        {
-            return;
-        }
-        
-        m_stopThread = false;
-        if (!m_decodeThread->isRunning())
-        {
-            m_decodeThread->start();
-        }
-        
+        QMediaPlayer::play();
         m_isPlaying = true;
         emit isPlayingChanged();
+        qDebug() << "Video playing";
     }
 }
 
@@ -94,75 +80,42 @@ void VideoPlayer::pause()
 {
     if (m_isPlaying)
     {
+        QMediaPlayer::pause();
         m_isPlaying = false;
         emit isPlayingChanged();
+        qDebug() << "Video paused";
     }
 }
 
 void VideoPlayer::stop()
 {
-    if (m_isPlaying || m_decodeThread->isRunning())
+    if (m_isPlaying || playbackState() == QMediaPlayer::PlayingState)
     {
-        m_stopThread = true;
-        m_decodeThread->wait();
-        
+        QMediaPlayer::stop();
         m_isPlaying = false;
         m_position = 0;
         emit isPlayingChanged();
         emit positionChanged();
+        qDebug() << "Video stopped";
     }
 }
 
-void VideoPlayer::decodeThread()
+void VideoPlayer::onMediaStatusChanged(QMediaPlayer::MediaStatus status)
 {
-    while (!m_stopThread)
-    {
-        if (m_isPlaying)
-        {
-            decodeFrame();
-        }
-        else
-        {
-            QThread::msleep(10);
-        }
-    }
-}
-
-void VideoPlayer::initializeFFmpeg()
-{
-    // 简化实现：什么都不做
-    qDebug() << "FFmpeg initialized (simulated)";
-}
-
-void VideoPlayer::cleanupFFmpeg()
-{
-    // 简化实现：什么都不做
-    qDebug() << "FFmpeg cleaned up (simulated)";
-}
-
-bool VideoPlayer::openFile()
-{
-    // 简化实现：模拟打开文件成功
-    m_formatCtx = reinterpret_cast<void*>(1);
-    return true;
-}
-
-void VideoPlayer::decodeFrame()
-{
-    // 简化实现：模拟解码帧
-    QThread::msleep(33); // 30fps
-    
-    m_position += 33;
-    if (m_position >= m_duration)
-    {
+    if (status == QMediaPlayer::EndOfMedia) {
         stop();
-        return;
     }
-    
+}
+
+void VideoPlayer::onPositionChanged(qint64 position)
+{
+    m_position = static_cast<int>(position);
     emit positionChanged();
-    
-    // 模拟帧可用信号
-    QImage image(640, 480, QImage::Format_RGB888);
-    image.fill(Qt::blue);
-    emit frameAvailable(image);
+}
+
+void VideoPlayer::onDurationChanged(qint64 duration)
+{
+    m_duration = static_cast<int>(duration);
+    emit durationChanged();
+    qDebug() << "Video duration:" << m_duration << "ms";
 }

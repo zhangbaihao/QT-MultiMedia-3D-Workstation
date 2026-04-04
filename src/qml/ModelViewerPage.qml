@@ -2,25 +2,21 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import Qt.labs.platform 1.1
-import QtMultiMedia3D 1.0
+import QtQuick3D
+import QtQuick3D.AssetUtils
 
 Page {
     objectName: "model3d"
     background: Rectangle { color: "#f8f9fa" }
 
     property string currentFile: ""
+    onCurrentFileChanged: {
+        console.log("QML: currentFile 变更为:", currentFile)
+        console.log("QML: currentFile 长度:", currentFile.length)
+    }
     property color modelColor: "#0078d4"
     property real zoom: 1.0
     property bool autoRotate: false
-
-
-
-    Timer {
-        running: autoRotate
-        interval: 30
-        repeat: true
-        onTriggered: renderer3D.rotateByMouse(1, 0)
-    }
 
     RowLayout {
         anchors.fill: parent
@@ -81,7 +77,10 @@ Page {
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
-                                onClicked: fileDialog.open()
+                                onClicked: {
+                                    console.log("QML: 用户点击了选择模型文件按钮")
+                                    fileDialog.open()
+                                }
                             }
 
                             Label {
@@ -194,7 +193,7 @@ Page {
                                     id: zoomSlider
                                     Layout.fillWidth: true
                                     from: 0.1
-                                    to: 3.0
+                                    to: 5.0
                                     value: zoom
                                     onValueChanged: zoom = value
                                 }
@@ -215,7 +214,8 @@ Page {
                                 flat: true
 
                                 onClicked: {
-                                    renderer3D.resetView()
+                                    camera.position = Qt.vector3d(0, 0, 10)
+                                    camera.rotation = Qt.vector3d(0, 0, 0)
                                     zoom = 1.0
                                     zoomSlider.value = 1.0
                                     autoRotate = false
@@ -280,13 +280,34 @@ Page {
             color: "#1e1e1e"
             radius: 16
 
-            // 3D模型渲染
-            Qml3DRenderer {
-                id: renderer3D
+            View3D {
                 anchors.fill: parent
-                modelPath: currentFile
-                modelColor: modelColor
-                zoom: zoom
+                camera: camera
+
+                PerspectiveCamera {
+                    id: camera
+                    position: Qt.vector3d(0, 0, 10)
+                    fieldOfView: 45
+                }
+
+                DirectionalLight {
+                    id: light
+                    position: Qt.vector3d(5, 5, 5)
+                }
+
+                // 3D模型
+                Model {
+                    id: model
+                    source: currentFile
+                    materials: [material]
+                    scale: Qt.vector3d(zoom, zoom, zoom)
+                    visible: currentFile !== ""
+                }
+
+                DefaultMaterial {
+                    id: material
+                    diffuseColor: modelColor
+                }
             }
 
             // 鼠标交互
@@ -306,21 +327,23 @@ Page {
                     var dx = mouse.x - lastX
                     var dy = mouse.y - lastY
                     if (pressedButtons & Qt.LeftButton) {
-                        renderer3D.rotateByMouse(dx, dy)
+                        // 旋转相机
+                        camera.rotation.x -= dy * 0.5
+                        camera.rotation.y += dx * 0.5
                     } else if (pressedButtons & Qt.RightButton) {
-                        renderer3D.panByMouse(dx, dy)
+                        // 平移相机
+                        camera.position.x -= dx * 0.01
+                        camera.position.y += dy * 0.01
                     }
                     lastX = mouse.x
                     lastY = mouse.y
                 }
 
                 onWheel: function(wheel) {
-                    zoom += wheel.angleDelta.y / 1200
-                    zoom = Math.max(0.1, Math.min(3.0, zoom))
+                    zoom += wheel.angleDelta.y / 300
+                    zoom = Math.max(0.1, Math.min(5.0, zoom))
                 }
             }
-
-
 
             // 视图控制提示
             Rectangle {
@@ -328,10 +351,10 @@ Page {
                 anchors.bottom: parent.bottom
                 anchors.margins: 20
                 width: 200
-                    height: 100
-                    color: "#000000"
-                    radius: 12
-                    opacity: 0.7
+                height: 100
+                color: "#000000"
+                radius: 12
+                opacity: 0.7
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -371,10 +394,10 @@ Page {
                 anchors.top: parent.top
                 anchors.margins: 20
                 width: 80
-                    height: 80
-                    color: "#000000"
-                    radius: 12
-                    opacity: 0.5
+                height: 80
+                color: "#000000"
+                radius: 12
+                opacity: 0.5
 
                 Label {
                     anchors.centerIn: parent
@@ -384,8 +407,6 @@ Page {
                     color: "#ffffff"
                 }
             }
-
-
         }
     }
 
@@ -395,41 +416,32 @@ Page {
         title: "选择3D模型文件"
         folder: StandardPaths.writableLocation(StandardPaths.DocumentsLocation)
         nameFilters: ["3D模型文件 (*.stl *.ply *.obj)", "所有文件 (*)"]
+        
         onAccepted: {
+            console.log("QML: 文件对话框被接受")
             console.log("QML: fileDialog.file type:", typeof fileDialog.file)
             console.log("QML: fileDialog.file:", fileDialog.file)
             
-            // 尝试使用不同的方法获取本地路径
-            var localPath = ""
-            if (fileDialog.file && fileDialog.file.toLocalFile) {
-                localPath = fileDialog.file.toLocalFile()
-                console.log("QML: 使用 toLocalFile() 获取路径:", localPath)
-            } else if (fileDialog.file && fileDialog.file.toString) {
-                var filePath = fileDialog.file.toString()
-                console.log("QML: 使用 toString() 获取路径:", filePath)
-                // 移除 file:/// 前缀
-                if (filePath.startsWith("file:///")) {
-                    localPath = filePath.substring(8)
-                } else if (filePath.startsWith("file://")) {
-                    localPath = filePath.substring(7)
-                } else {
-                    localPath = filePath
-                }
-                console.log("QML: 移除前缀后:", localPath)
+            // 确保获取正确的文件URL格式
+            var fileUrl = ""
+            if (fileDialog.file && fileDialog.file.toString) {
+                fileUrl = fileDialog.file.toString()
+                console.log("QML: 获取文件URL:", fileUrl)
+            } else if (fileDialog.files && fileDialog.files.length > 0) {
+                // 尝试使用files数组
+                fileUrl = fileDialog.files[0].toString()
+                console.log("QML: 从files数组获取文件URL:", fileUrl)
             }
             
-            // 转换反斜杠为正斜杠
-            localPath = localPath.replace(/\\/g, "/")
-            console.log("QML: 转换路径分隔符后:", localPath)
+            console.log("QML: 最终文件URL:", fileUrl)
             
-            // 直接设置 renderer3D.modelPath，Qml3DRenderer 会自动加载模型
-            console.log("QML: 直接设置 renderer3D.modelPath:", localPath)
-            renderer3D.modelPath = localPath
-            console.log("QML: renderer3D.modelPath after:", renderer3D.modelPath)
-            
-            // 同时更新 currentFile 以便在界面上显示
-            currentFile = localPath
+            // 同时更新 currentFile 以便在界面上显示和加载模型
+            currentFile = fileUrl
             console.log("QML: 更新 currentFile 为:", currentFile)
+        }
+        
+        onRejected: {
+            console.log("QML: 文件对话框被取消")
         }
     }
 }

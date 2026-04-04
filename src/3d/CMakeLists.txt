@@ -1,6 +1,4 @@
 add_library(3d STATIC
-    Qml3DRenderer.h
-    Qml3DRenderer.cpp
     ModelLoader.h
     ModelLoader.cpp
     Camera.h

@@ -2,10 +2,26 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import Qt.labs.platform 1.1
+import QtMultimedia 6.0
 
 Page {
     objectName: "video"
     background: Rectangle { color: "#1a1a1a" }
+
+    // 媒体播放器
+    MediaPlayer {
+        id: mediaPlayer
+        videoOutput: videoOutput
+        onPlaybackStateChanged: {
+            isPlaying = (playbackState === MediaPlayer.PlayingState)
+        }
+        onPositionChanged: {
+            position = mediaPlayer.position
+        }
+        onDurationChanged: {
+            duration = mediaPlayer.duration
+        }
+    }
 
     // 视频数据
     property string currentFile: ""
@@ -28,6 +44,13 @@ Page {
             radius: 16
             anchors.margins: 10
             Layout.margins: 0
+
+            // 视频播放输出
+            VideoOutput {
+                id: videoOutput
+                anchors.fill: parent
+                visible: currentFile !== ""
+            }
 
             // 视频信息显示
             Rectangle {
@@ -74,6 +97,7 @@ Page {
                 text: currentFile === "" ? "请点击下方按钮选择视频文件" : "视频播放区域"
                 font.pixelSize: 16
                 color: "#ffffff"
+                visible: currentFile === "" || !isPlaying
             }
         }
 
@@ -113,7 +137,7 @@ Page {
                         value: position
                         enabled: currentFile !== ""
 
-                        onValueChanged: position = value
+                        onValueChanged: mediaPlayer.position = value
 
                         background: Rectangle {
                             x: positionSlider.leftPadding
@@ -196,7 +220,7 @@ Page {
                         }
 
                         onClicked: {
-                            position = Math.max(0, position - 10000)
+                            mediaPlayer.position = Math.max(0, position - 10000)
                         }
                     }
 
@@ -216,7 +240,11 @@ Page {
                         }
 
                         onClicked: {
-                            isPlaying = !isPlaying
+                            if (isPlaying) {
+                                mediaPlayer.pause()
+                            } else {
+                                mediaPlayer.play()
+                            }
                         }
                     }
 
@@ -236,8 +264,7 @@ Page {
                         }
 
                         onClicked: {
-                            isPlaying = false
-                            position = 0
+                            mediaPlayer.stop()
                         }
                     }
 
@@ -257,7 +284,7 @@ Page {
                         }
 
                         onClicked: {
-                            position = Math.min(duration, position + 10000)
+                            mediaPlayer.position = Math.min(duration, position + 10000)
                         }
                     }
 
@@ -371,12 +398,44 @@ Page {
         id: videoFileDialog
         title: "选择视频文件"
         folder: StandardPaths.writableLocation(StandardPaths.DocumentsLocation)
-        nameFilters: ["视频文件 (*.mp4 *.avi *.mkv *.mov *.wmv)", "所有文件 (*)"]
+        nameFilters: ["视频文件 (*.mp4)", "所有文件 (*)"]
         onAccepted: {
             currentFile = videoFileDialog.file.toString().replace("file:///", "")
-            // 模拟加载视频
-            duration = 300000 // 5分钟
-            isPlaying = true
+            console.log("选择视频文件:", currentFile)
+            mediaPlayer.source = videoFileDialog.file
+            console.log("设置媒体源:", videoFileDialog.file)
+        }
+    }
+    
+    // 媒体播放器信号处理
+    Connections {
+        target: mediaPlayer
+        function onMediaStatusChanged(status) {
+            console.log("媒体状态改变:", status)
+            if (status === MediaPlayer.Loaded) {
+                console.log("视频文件加载成功")
+            } else if (status === MediaPlayer.InvalidMedia) {
+                console.log("无效的媒体文件")
+            }
+        }
+        function onPlaybackStateChanged(state) {
+            console.log("播放状态改变:", state)
+            if (state === MediaPlayer.PlayingState) {
+                console.log("视频开始播放")
+            } else if (state === MediaPlayer.PausedState) {
+                console.log("视频暂停")
+            } else if (state === MediaPlayer.StoppedState) {
+                console.log("视频停止")
+            }
+        }
+        function onPositionChanged(position) {
+            console.log("位置改变:", position)
+        }
+        function onDurationChanged(duration) {
+            console.log("时长改变:", duration)
+        }
+        function onErrorOccurred(error, errorString) {
+            console.log("错误:", error, errorString)
         }
     }
 
