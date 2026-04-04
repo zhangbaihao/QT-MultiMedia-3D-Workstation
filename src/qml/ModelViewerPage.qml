@@ -313,23 +313,38 @@ Page {
                     position: Qt.vector3d(5, 5, 5)
                 }
 
-                // 使用Qt Quick 3D内置的模型加载功能
+                // 使用自定义的 ModelLoader 加载模型
                 Model {
                     id: model
-                    source: currentFile
                     materials: [material]
                     scale: Qt.vector3d(zoom, zoom, zoom)
                     visible: currentFile !== ""
                     
-                    onSourceChanged: {
-                        console.log("QML: Model source 变更为:", source)
-                        modelStatus = "加载中"
+                    // 使用自定义的 ModelLoader 作为几何数据
+                    geometry: ModelLoader {
+                        id: modelLoader
+                        source: currentFile
+                        onLoadedChanged: {
+                            if (modelLoader.loaded) {
+                                modelStatus = "已加载"
+                                vertexCount = modelLoader.vertexCount
+                                faceCount = modelLoader.faceCount
+                                console.log("QML: 模型加载成功:", modelLoader.vertexCount, "顶点,", modelLoader.faceCount, "面")
+                            } else {
+                                modelStatus = "加载失败"
+                                console.log("QML: 模型加载失败")
+                            }
+                        }
+                        onSourceChanged: {
+                            console.log("QML: ModelLoader source 变更为:", source)
+                            modelStatus = "加载中"
+                        }
                     }
                     
                     Component.onCompleted: {
                         console.log("QML: Model 组件完成初始化")
                         if (currentFile) {
-                            modelStatus = "已加载"
+                            modelStatus = "加载中"
                         }
                     }
                 }
@@ -467,13 +482,17 @@ Page {
             
             console.log("QML: 最终文件URL:", fileUrl)
             
+            // 转换 file:// URL 为本地文件路径
+            var localPath = fileUrl.toString().replace("file:///", "")
+            console.log("QML: 转换为本地文件路径:", localPath)
+            
             // 同时更新 currentFile 以便在界面上显示和加载模型
-            currentFile = fileUrl
+            currentFile = localPath
             console.log("QML: 更新 currentFile 为:", currentFile)
             
             // 手动触发模型加载
-            model.source = currentFile
-            console.log("QML: 手动设置 Model source 为:", model.source)
+            modelLoader.source = currentFile
+            console.log("QML: 手动设置 ModelLoader source 为:", modelLoader.source)
         }
         
         onRejected: {
