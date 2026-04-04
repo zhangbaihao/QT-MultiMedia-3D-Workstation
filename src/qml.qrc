@@ -5,6 +5,7 @@
         <file>qml/MainWindow.qml</file>
         <file>qml/HomePage.qml</file>
         <file>qml/ModelViewerPage.qml</file>
+        <file>qml/ModelViewerOpenglPage.qml</file>
         <file>qml/VideoPlayerPage.qml</file>
         <file>qml/ControlsPage.qml</file>
     </qresource>

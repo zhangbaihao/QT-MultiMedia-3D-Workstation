@@ -66,7 +66,7 @@ ApplicationWindow {
                     }
                 }
                 TabButton {
-                    text: "3D模型"
+                    text: "3D模型 (Qt Quick 3D)"
                     onClicked: stackLayout.currentIndex = 1
                     padding: 20
                     font.pixelSize: 14
@@ -83,6 +83,32 @@ ApplicationWindow {
                     contentItem: Text {
                         text: parent.text
                         color: tabBar.currentIndex === 1 ? "#ffffff" : "#333333"
+                        font: parent.font
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        Behavior on color {
+                            ColorAnimation { duration: 200 }
+                        }
+                    }
+                }
+                TabButton {
+                    text: "3D模型 (OpenGL)"
+                    onClicked: stackLayout.currentIndex = 4
+                    padding: 20
+                    font.pixelSize: 14
+                    font.weight: Font.Medium
+                    background: Rectangle {
+                        color: tabBar.currentIndex === 4 ? "#0078d4" : "transparent"
+                        radius: 8
+                        anchors.fill: parent
+                        anchors.margins: 8
+                        Behavior on color {
+                            ColorAnimation { duration: 200 }
+                        }
+                    }
+                    contentItem: Text {
+                        text: parent.text
+                        color: tabBar.currentIndex === 4 ? "#ffffff" : "#333333"
                         font: parent.font
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -179,6 +205,19 @@ ApplicationWindow {
         // 控件展示页面
         ControlsPage {
             clip: true
+        }
+
+        // 3D模型页面 (OpenGL)
+        Rectangle {
+            clip: true
+            color: "#f8f9fa"
+            Label {
+                anchors.centerIn: parent
+                text: "OpenGL 3D 模型查看器"
+                font.pixelSize: 18
+                font.weight: Font.Bold
+                color: "#333333"
+            }
         }
     }
 

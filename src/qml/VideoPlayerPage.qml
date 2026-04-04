@@ -12,15 +12,6 @@ Page {
     MediaPlayer {
         id: mediaPlayer
         videoOutput: videoOutput
-        onPlaybackStateChanged: {
-            isPlaying = (playbackState === MediaPlayer.PlayingState)
-        }
-        onPositionChanged: {
-            position = mediaPlayer.position
-        }
-        onDurationChanged: {
-            duration = mediaPlayer.duration
-        }
     }
 
     // 视频数据
@@ -420,6 +411,7 @@ Page {
         }
         function onPlaybackStateChanged(state) {
             console.log("播放状态改变:", state)
+            isPlaying = (state === MediaPlayer.PlayingState)
             if (state === MediaPlayer.PlayingState) {
                 console.log("视频开始播放")
             } else if (state === MediaPlayer.PausedState) {
@@ -428,11 +420,13 @@ Page {
                 console.log("视频停止")
             }
         }
-        function onPositionChanged(position) {
-            console.log("位置改变:", position)
+        function onPositionChanged(newPosition) {
+            console.log("位置改变:", newPosition)
+            position = newPosition
         }
-        function onDurationChanged(duration) {
-            console.log("时长改变:", duration)
+        function onDurationChanged(newDuration) {
+            console.log("时长改变:", newDuration)
+            duration = newDuration
         }
         function onErrorOccurred(error, errorString) {
             console.log("错误:", error, errorString)
