@@ -1,7 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import QtQuick.Dialogs 2.15
+import Qt.labs.platform 1.1
 import QtMultiMedia3D 1.0
 
 Page {
@@ -12,6 +12,8 @@ Page {
     property color modelColor: "#0078d4"
     property real zoom: 1.0
     property bool autoRotate: false
+
+
 
     Timer {
         running: autoRotate
@@ -223,16 +225,16 @@ Page {
                             columnSpacing: 15
 
                             Label { text: "顶点数:"; font.pixelSize: 12; color: "#666666" }
-                            Label { text: "1,248"; font.pixelSize: 12; color: "#333333"; font.weight: Font.Medium }
+                            Label { text: renderer3D.vertexCount.toLocaleString(); font.pixelSize: 12; color: "#333333"; font.weight: Font.Medium }
 
                             Label { text: "面数:"; font.pixelSize: 12; color: "#666666" }
-                            Label { text: "2,496"; font.pixelSize: 12; color: "#333333"; font.weight: Font.Medium }
+                            Label { text: renderer3D.faceCount.toLocaleString(); font.pixelSize: 12; color: "#333333"; font.weight: Font.Medium }
 
                             Label { text: "格式:"; font.pixelSize: 12; color: "#666666" }
-                            Label { text: "STL"; font.pixelSize: 12; color: "#333333"; font.weight: Font.Medium }
+                            Label { text: currentFile ? (currentFile.toUpperCase().endsWith(".STL") ? "STL" : currentFile.toUpperCase().endsWith(".PLY") ? "PLY" : "Unknown") : "-"; font.pixelSize: 12; color: "#333333"; font.weight: Font.Medium }
 
-                            Label { text: "尺寸:"; font.pixelSize: 12; color: "#666666" }
-                            Label { text: "100x80x60 mm"; font.pixelSize: 12; color: "#333333"; font.weight: Font.Medium }
+                            Label { text: "状态:"; font.pixelSize: 12; color: "#666666" }
+                            Label { text: currentFile ? (renderer3D.vertexCount > 0 ? "已加载" : "加载失败") : "未选择"; font.pixelSize: 12; color: currentFile ? (renderer3D.vertexCount > 0 ? "#107c10" : "#e81123") : "#666666"; font.weight: Font.Medium }
                         }
                     }
 
@@ -260,6 +262,7 @@ Page {
 
         // 右侧3D视图
         Rectangle {
+            id: viewport3D
             Layout.fillWidth: true
             Layout.fillHeight: true
             color: "#1e1e1e"
@@ -268,7 +271,6 @@ Page {
             Qml3DRenderer {
                 id: renderer3D
                 anchors.fill: parent
-                modelPath: currentFile
                 modelColor: modelColor
                 zoom: zoom
             }
@@ -353,52 +355,85 @@ Page {
                     color: "#ffffff"
                 }
             }
+
+            // 鼠标交互区域 - 放在3D视图区域上
+            MouseArea {
+                anchors.fill: parent // 覆盖3D视图区域
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+                property real lastX: 0
+                property real lastY: 0
+
+                onPressed: function(mouse) {
+                    lastX = mouse.x
+                    lastY = mouse.y
+                }
+
+                onPositionChanged: function(mouse) {
+                    var dx = mouse.x - lastX
+                    var dy = mouse.y - lastY
+                    if (pressedButtons & Qt.LeftButton) {
+                        renderer3D.rotateByMouse(dx, dy)
+                    } else if (pressedButtons & Qt.RightButton) {
+                        renderer3D.panByMouse(dx, dy)
+                    }
+                    lastX = mouse.x
+                    lastY = mouse.y
+                }
+
+                onWheel: function(wheel) {
+                    console.log("Wheel event: angleDelta.y=", wheel.angleDelta.y)
+                    zoom += wheel.angleDelta.y / 1200
+                    zoom = Math.max(0.1, Math.min(3.0, zoom))
+                    console.log("Zoom value:", zoom)
+                    zoomSlider.value = zoom
+                    renderer3D.zoom = zoom
+                }
+            }
         }
     }
 
-    // 文件对话框
+    // 文件对话框 - 使用 Qt.labs.platform 1.1
     FileDialog {
         id: fileDialog
         title: "选择3D模型文件"
+        folder: StandardPaths.writableLocation(StandardPaths.DocumentsLocation)
         nameFilters: ["3D模型文件 (*.stl *.ply *.obj)", "所有文件 (*)"]
         onAccepted: {
-            var filePath = fileDialog.selectedFile.toString()
-            if (Qt.platform.os === "windows") {
-                currentFile = filePath.replace("file:///", "")
-            } else {
-                currentFile = filePath.replace("file://", "")
+            console.log("QML: fileDialog.file type:", typeof fileDialog.file)
+            console.log("QML: fileDialog.file:", fileDialog.file)
+            
+            // 尝试使用不同的方法获取本地路径
+            var localPath = ""
+            if (fileDialog.file && fileDialog.file.toLocalFile) {
+                localPath = fileDialog.file.toLocalFile()
+                console.log("QML: 使用 toLocalFile() 获取路径:", localPath)
+            } else if (fileDialog.file && fileDialog.file.toString) {
+                var filePath = fileDialog.file.toString()
+                console.log("QML: 使用 toString() 获取路径:", filePath)
+                // 移除 file:/// 前缀
+                if (filePath.startsWith("file:///")) {
+                    localPath = filePath.substring(8)
+                } else if (filePath.startsWith("file://")) {
+                    localPath = filePath.substring(7)
+                } else {
+                    localPath = filePath
+                }
+                console.log("QML: 移除前缀后:", localPath)
             }
-        }
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-
-        property real lastX: 0
-        property real lastY: 0
-
-        onPressed: function(mouse) {
-            lastX = mouse.x
-            lastY = mouse.y
-        }
-
-        onPositionChanged: function(mouse) {
-            var dx = mouse.x - lastX
-            var dy = mouse.y - lastY
-            if (pressedButtons & Qt.LeftButton) {
-                renderer3D.rotateByMouse(dx, dy)
-            } else if (pressedButtons & Qt.RightButton) {
-                renderer3D.panByMouse(dx, dy)
-            }
-            lastX = mouse.x
-            lastY = mouse.y
-        }
-
-        onWheel: function(wheel) {
-            zoom += wheel.angleDelta.y / 1200
-            zoom = Math.max(0.1, Math.min(3.0, zoom))
-            zoomSlider.value = zoom
+            
+            // 转换反斜杠为正斜杠
+            localPath = localPath.replace(/\\/g, "/")
+            console.log("QML: 转换路径分隔符后:", localPath)
+            
+            // 直接设置 renderer3D.modelPath，绕过 currentFile
+            console.log("QML: 直接设置 renderer3D.modelPath:", localPath)
+            renderer3D.modelPath = localPath
+            console.log("QML: renderer3D.modelPath after:", renderer3D.modelPath)
+            
+            // 同时更新 currentFile 以便在界面上显示
+            currentFile = localPath
+            console.log("QML: 更新 currentFile 为:", currentFile)
         }
     }
 }

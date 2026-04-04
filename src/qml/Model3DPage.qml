@@ -1,7 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import QtQuick.Dialogs 2.15
+import Qt.labs.platform 1.1
 import QtMultiMedia3D 1.0
 
 Page {
@@ -356,13 +356,13 @@ Page {
         }
     }
 
-    // 文件对话框
     FileDialog {
         id: fileDialog
         title: "选择3D模型文件"
+        folder: StandardPaths.writableLocation(StandardPaths.DocumentsLocation)
         nameFilters: ["3D模型文件 (*.stl *.ply *.obj)", "所有文件 (*)"]
         onAccepted: {
-            var filePath = fileDialog.selectedFile.toString()
+            var filePath = fileDialog.file.toString()
             if (Qt.platform.os === "windows") {
                 currentFile = filePath.replace("file:///", "")
             } else {

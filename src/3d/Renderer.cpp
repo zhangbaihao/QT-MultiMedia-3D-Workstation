@@ -34,7 +34,7 @@ void Renderer::loadModel(const QString &path)
     {
         m_modelLoader.loadPLY(path, m_vertices, m_indices);
     }
-
+    qDebug() << "Loading model from:" << path;
     setupBuffers();
     update();
 }

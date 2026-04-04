@@ -1,0 +1,6 @@
+module QtMultiMedia3D.pages
+
+HomePage 1.0 HomePage.qml
+Model3DPage 1.0 Model3DPage.qml
+VideoPlayerPage 1.0 VideoPlayerPage.qml
+ControlsPage 1.0 ControlsPage.qml

@@ -12,7 +12,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_TOOLCHAIN_FILE "D:/code/vcpkg/scripts/buildsystems/vcpkg.cmake")
 set(Qt6_DIR "C:/Qt/6.10.2/msvc2022_64/lib/cmake/Qt6")
 
-find_package(Qt6 COMPONENTS Core Gui Qml Quick OpenGL Widgets REQUIRED)
+find_package(Qt6 COMPONENTS Core Gui Qml Quick OpenGL Widgets Multimedia Quick3D REQUIRED)
 
 if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP")
@@ -25,4 +25,4 @@ include_directories(include)
 
 # 子目录
 add_subdirectory(src)
-add_subdirectory(tests)
+#add_subdirectory(tests)

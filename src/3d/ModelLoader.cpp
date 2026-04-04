@@ -11,41 +11,53 @@ ModelLoader::~ModelLoader()
 
 bool ModelLoader::loadSTL(const QString &path, QVector<Vertex> &vertices, QVector<unsigned int> &indices)
 {
+    qDebug() << "ModelLoader::loadSTL called with path:" << path;
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly))
     {
-        qDebug() << "Failed to open STL file:" << path;
+        qDebug() << "Failed to open STL file:" << path << "Error:" << file.errorString();
         return false;
     }
 
     QByteArray content = file.readAll();
     file.close();
+    qDebug() << "Read" << content.size() << "bytes from file";
 
     // 检测是ASCII还是二进制STL
     if (content.startsWith("solid"))
     {
-        return parseSTLAscii(QString(content), vertices, indices);
+        qDebug() << "Detected ASCII STL format";
+        bool result = parseSTLAscii(QString(content), vertices, indices);
+        qDebug() << "parseSTLAscii result:" << result << "vertices:" << vertices.size() << "indices:" << indices.size();
+        return result;
     }
     else
     {
-        return parseSTLBinary(content, vertices, indices);
+        qDebug() << "Detected Binary STL format";
+        bool result = parseSTLBinary(content, vertices, indices);
+        qDebug() << "parseSTLBinary result:" << result << "vertices:" << vertices.size() << "indices:" << indices.size();
+        return result;
     }
 }
 
 bool ModelLoader::loadPLY(const QString &path, QVector<Vertex> &vertices, QVector<unsigned int> &indices)
 {
+    qDebug() << "ModelLoader::loadPLY called with path:" << path;
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
     {
-        qDebug() << "Failed to open PLY file:" << path;
+        qDebug() << "Failed to open PLY file:" << path << "Error:" << file.errorString();
         return false;
     }
 
     QTextStream stream(&file);
     QString content = stream.readAll();
     file.close();
+    qDebug() << "Read" << content.size() << "bytes from file";
 
-    return parsePLY(content, vertices, indices);
+    bool result = parsePLY(content, vertices, indices);
+    qDebug() << "parsePLY result:" << result << "vertices:" << vertices.size() << "indices:" << indices.size();
+    return result;
 }
 
 bool ModelLoader::parseSTLAscii(const QString &content, QVector<Vertex> &vertices, QVector<unsigned int> &indices)
@@ -148,6 +160,8 @@ bool ModelLoader::parsePLY(const QString &content, QVector<Vertex> &vertices, QV
     int vertexCount = 0;
     int faceCount = 0;
     bool inHeader = true;
+    bool hasNormals = false;
+    bool hasTextureCoords = false;
 
     while (!stream.atEnd() && inHeader)
     {
@@ -164,11 +178,26 @@ bool ModelLoader::parsePLY(const QString &content, QVector<Vertex> &vertices, QV
                 stream >> faceCount;
             }
         }
+        else if (line == "property")
+        {
+            stream >> line; // float或double
+            stream >> line; // 属性名
+            if (line == "nx" || line == "ny" || line == "nz")
+            {
+                hasNormals = true;
+            }
+            else if (line == "s" || line == "t" || line == "u" || line == "v")
+            {
+                hasTextureCoords = true;
+            }
+        }
         else if (line == "end_header")
         {
             inHeader = false;
         }
     }
+
+    qDebug() << "PLY文件信息: 顶点数=" << vertexCount << "面数=" << faceCount << "有法向量=" << hasNormals << "有纹理坐标=" << hasTextureCoords;
 
     // 读取顶点
     for (int i = 0; i < vertexCount; ++i)
@@ -179,16 +208,31 @@ bool ModelLoader::parsePLY(const QString &content, QVector<Vertex> &vertices, QV
         vertex.position.setX(x);
         vertex.position.setY(y);
         vertex.position.setZ(z);
-        // 尝试读取法向量和纹理坐标
-        float nx, ny, nz;
-        stream >> nx >> ny >> nz;
-        vertex.normal.setX(nx);
-        vertex.normal.setY(ny);
-        vertex.normal.setZ(nz);
-        float tx, ty;
-        stream >> tx >> ty;
-        vertex.texCoord.setX(tx);
-        vertex.texCoord.setY(ty);
+        
+        // 只读取实际存在的属性
+        if (hasNormals)
+        {
+            float nx, ny, nz;
+            stream >> nx >> ny >> nz;
+            vertex.normal.setX(nx);
+            vertex.normal.setY(ny);
+            vertex.normal.setZ(nz);
+        } else {
+            // 如果没有法向量，设置默认值
+            vertex.normal = QVector3D(0.0f, 0.0f, 1.0f);
+        }
+        
+        if (hasTextureCoords)
+        {
+            float tx, ty;
+            stream >> tx >> ty;
+            vertex.texCoord.setX(tx);
+            vertex.texCoord.setY(ty);
+        } else {
+            // 如果没有纹理坐标，设置默认值
+            vertex.texCoord = QVector2D(0.0f, 0.0f);
+        }
+        
         vertices.append(vertex);
     }
 
@@ -205,5 +249,6 @@ bool ModelLoader::parsePLY(const QString &content, QVector<Vertex> &vertices, QV
         }
     }
 
+    qDebug() << "成功加载PLY文件: 顶点数=" << vertices.size() << "面数=" << indices.size()/3;
     return !vertices.isEmpty();
 }
