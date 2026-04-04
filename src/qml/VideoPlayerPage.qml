@@ -391,10 +391,29 @@ Page {
         folder: StandardPaths.writableLocation(StandardPaths.DocumentsLocation)
         nameFilters: ["视频文件 (*.mp4)", "所有文件 (*)"]
         onAccepted: {
-            currentFile = videoFileDialog.file.toString().replace("file:///", "")
-            console.log("选择视频文件:", currentFile)
-            mediaPlayer.source = videoFileDialog.file
-            console.log("设置媒体源:", videoFileDialog.file)
+            console.log("QML: 视频文件对话框被接受")
+            console.log("QML: videoFileDialog.file type:", typeof videoFileDialog.file)
+            console.log("QML: videoFileDialog.file:", videoFileDialog.file)
+            console.log("QML: videoFileDialog.files:", videoFileDialog.files)
+            console.log("QML: videoFileDialog.files.length:", videoFileDialog.files ? videoFileDialog.files.length : 0)
+            
+            var fileUrl = ""
+            if (videoFileDialog.files && videoFileDialog.files.length > 0) {
+                // 优先使用files数组
+                fileUrl = videoFileDialog.files[0]
+                console.log("QML: 从files数组获取文件URL:", fileUrl)
+            } else if (videoFileDialog.file) {
+                fileUrl = videoFileDialog.file
+                console.log("QML: 从file获取文件URL:", fileUrl)
+            }
+            
+            console.log("QML: 最终文件URL:", fileUrl)
+            
+            currentFile = fileUrl.toString().replace("file:///", "")
+            console.log("QML: 更新 currentFile 为:", currentFile)
+            
+            mediaPlayer.source = fileUrl
+            console.log("QML: 设置媒体源:", mediaPlayer.source)
         }
     }
     

@@ -335,7 +335,21 @@ Page {
         onAccepted: {
             console.log("QML: 文件对话框被接受")
             console.log("QML: fileDialog.fileUrl:", fileDialog.fileUrl)
-            currentFile = fileDialog.fileUrl
+            console.log("QML: fileDialog.fileUrls:", fileDialog.fileUrls)
+            console.log("QML: fileDialog.fileUrls.length:", fileDialog.fileUrls ? fileDialog.fileUrls.length : 0)
+            
+            var fileUrl = ""
+            if (fileDialog.fileUrls && fileDialog.fileUrls.length > 0) {
+                fileUrl = fileDialog.fileUrls[0]
+                console.log("QML: 从fileUrls数组获取文件URL:", fileUrl)
+            } else if (fileDialog.fileUrl) {
+                fileUrl = fileDialog.fileUrl
+                console.log("QML: 从fileUrl获取文件URL:", fileUrl)
+            }
+            
+            console.log("QML: 最终文件URL:", fileUrl)
+            currentFile = fileUrl
+            console.log("QML: 更新 currentFile 为:", currentFile)
         }
         
         onRejected: {

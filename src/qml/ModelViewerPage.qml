@@ -451,16 +451,18 @@ Page {
             console.log("QML: 文件对话框被接受")
             console.log("QML: fileDialog.file type:", typeof fileDialog.file)
             console.log("QML: fileDialog.file:", fileDialog.file)
+            console.log("QML: fileDialog.files:", fileDialog.files)
+            console.log("QML: fileDialog.files.length:", fileDialog.files ? fileDialog.files.length : 0)
             
             // 确保获取正确的文件URL格式
             var fileUrl = ""
-            if (fileDialog.file && fileDialog.file.toString) {
-                fileUrl = fileDialog.file.toString()
-                console.log("QML: 获取文件URL:", fileUrl)
-            } else if (fileDialog.files && fileDialog.files.length > 0) {
-                // 尝试使用files数组
+            if (fileDialog.files && fileDialog.files.length > 0) {
+                // 优先使用files数组
                 fileUrl = fileDialog.files[0].toString()
                 console.log("QML: 从files数组获取文件URL:", fileUrl)
+            } else if (fileDialog.file && fileDialog.file.toString) {
+                fileUrl = fileDialog.file.toString()
+                console.log("QML: 获取文件URL:", fileUrl)
             }
             
             console.log("QML: 最终文件URL:", fileUrl)
@@ -468,6 +470,10 @@ Page {
             // 同时更新 currentFile 以便在界面上显示和加载模型
             currentFile = fileUrl
             console.log("QML: 更新 currentFile 为:", currentFile)
+            
+            // 手动触发模型加载
+            model.source = currentFile
+            console.log("QML: 手动设置 Model source 为:", model.source)
         }
         
         onRejected: {
