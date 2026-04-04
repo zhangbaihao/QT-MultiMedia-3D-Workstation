@@ -6,7 +6,7 @@ import QtMultiMedia3D 1.0
 
 Page {
     objectName: "model3d"
-    background: Rectangle { color: "#f5f5f5" }
+    background: Rectangle { color: "#f8f9fa" }
 
     property string currentFile: ""
     property color modelColor: "#0078d4"
@@ -24,7 +24,8 @@ Page {
 
     RowLayout {
         anchors.fill: parent
-        spacing: 0
+        spacing: 15
+        anchors.margins: 10
 
         // 左侧控制面板
         Rectangle {
@@ -33,6 +34,7 @@ Page {
             color: "#ffffff"
             border.color: "#e0e0e0"
             border.width: 1
+            radius: 16
 
             ScrollView {
                 anchors.fill: parent
@@ -68,7 +70,7 @@ Page {
 
                                 background: Rectangle {
                                     color: parent.pressed ? "#005a9e" : "#0078d4"
-                                    radius: 6
+                                    radius: 8
                                 }
 
                                 contentItem: Text {
@@ -114,12 +116,22 @@ Page {
                                         width: 32
                                         height: 32
                                         color: modelData
-                                        radius: 4
+                                        radius: 8
                                         border.color: modelColor === modelData ? "#333333" : "transparent"
                                         border.width: 2
+                                        Behavior on border.color {
+                                            ColorAnimation { duration: 200 }
+                                        }
 
                                         MouseArea {
                                             anchors.fill: parent
+                                            hoverEnabled: true
+                                            onEntered: {
+                                                parent.scale = 1.1
+                                            }
+                                            onExited: {
+                                                parent.scale = 1.0
+                                            }
                                             onClicked: modelColor = modelData
                                         }
                                     }
@@ -141,7 +153,7 @@ Page {
                                     Layout.preferredWidth: 40
                                     Layout.preferredHeight: 30
                                     color: modelColor
-                                    radius: 4
+                                    radius: 6
                                     border.color: "#cccccc"
                                     border.width: 1
                                 }
@@ -225,16 +237,16 @@ Page {
                             columnSpacing: 15
 
                             Label { text: "顶点数:"; font.pixelSize: 12; color: "#666666" }
-                            Label { text: renderer3D.vertexCount.toLocaleString(); font.pixelSize: 12; color: "#333333"; font.weight: Font.Medium }
+                            Label { text: "-"; font.pixelSize: 12; color: "#333333"; font.weight: Font.Medium }
 
                             Label { text: "面数:"; font.pixelSize: 12; color: "#666666" }
-                            Label { text: renderer3D.faceCount.toLocaleString(); font.pixelSize: 12; color: "#333333"; font.weight: Font.Medium }
+                            Label { text: "-"; font.pixelSize: 12; color: "#333333"; font.weight: Font.Medium }
 
                             Label { text: "格式:"; font.pixelSize: 12; color: "#666666" }
                             Label { text: currentFile ? (currentFile.toUpperCase().endsWith(".STL") ? "STL" : currentFile.toUpperCase().endsWith(".PLY") ? "PLY" : "Unknown") : "-"; font.pixelSize: 12; color: "#333333"; font.weight: Font.Medium }
 
                             Label { text: "状态:"; font.pixelSize: 12; color: "#666666" }
-                            Label { text: currentFile ? (renderer3D.vertexCount > 0 ? "已加载" : "加载失败") : "未选择"; font.pixelSize: 12; color: currentFile ? (renderer3D.vertexCount > 0 ? "#107c10" : "#e81123") : "#666666"; font.weight: Font.Medium }
+                            Label { text: currentFile ? "已加载" : "未选择"; font.pixelSize: 12; color: currentFile ? "#107c10" : "#666666"; font.weight: Font.Medium }
                         }
                     }
 
@@ -266,32 +278,49 @@ Page {
             Layout.fillWidth: true
             Layout.fillHeight: true
             color: "#1e1e1e"
+            radius: 16
 
             // 3D模型渲染
             Qml3DRenderer {
                 id: renderer3D
                 anchors.fill: parent
+                modelPath: currentFile
                 modelColor: modelColor
                 zoom: zoom
             }
 
-            // 网格背景
-            Grid {
+            // 鼠标交互
+            MouseArea {
                 anchors.fill: parent
-                columns: 20
-                rows: 20
-                opacity: 0.1
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
 
-                Repeater {
-                    model: 400
+                property real lastX: 0
+                property real lastY: 0
 
-                    Rectangle {
-                        width: parent.width / 20
-                        height: parent.height / 20
-                        color: (index % 2 === 0) ? "#ffffff" : "transparent"
+                onPressed: function(mouse) {
+                    lastX = mouse.x
+                    lastY = mouse.y
+                }
+
+                onPositionChanged: function(mouse) {
+                    var dx = mouse.x - lastX
+                    var dy = mouse.y - lastY
+                    if (pressedButtons & Qt.LeftButton) {
+                        renderer3D.rotateByMouse(dx, dy)
+                    } else if (pressedButtons & Qt.RightButton) {
+                        renderer3D.panByMouse(dx, dy)
                     }
+                    lastX = mouse.x
+                    lastY = mouse.y
+                }
+
+                onWheel: function(wheel) {
+                    zoom += wheel.angleDelta.y / 1200
+                    zoom = Math.max(0.1, Math.min(3.0, zoom))
                 }
             }
+
+
 
             // 视图控制提示
             Rectangle {
@@ -299,10 +328,10 @@ Page {
                 anchors.bottom: parent.bottom
                 anchors.margins: 20
                 width: 200
-                height: 100
-                color: "#000000"
-                radius: 8
-                opacity: 0.7
+                    height: 100
+                    color: "#000000"
+                    radius: 12
+                    opacity: 0.7
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -342,10 +371,10 @@ Page {
                 anchors.top: parent.top
                 anchors.margins: 20
                 width: 80
-                height: 80
-                color: "#000000"
-                radius: 8
-                opacity: 0.5
+                    height: 80
+                    color: "#000000"
+                    radius: 12
+                    opacity: 0.5
 
                 Label {
                     anchors.centerIn: parent
@@ -356,40 +385,7 @@ Page {
                 }
             }
 
-            // 鼠标交互区域 - 放在3D视图区域上
-            MouseArea {
-                anchors.fill: parent // 覆盖3D视图区域
-                acceptedButtons: Qt.LeftButton | Qt.RightButton
 
-                property real lastX: 0
-                property real lastY: 0
-
-                onPressed: function(mouse) {
-                    lastX = mouse.x
-                    lastY = mouse.y
-                }
-
-                onPositionChanged: function(mouse) {
-                    var dx = mouse.x - lastX
-                    var dy = mouse.y - lastY
-                    if (pressedButtons & Qt.LeftButton) {
-                        renderer3D.rotateByMouse(dx, dy)
-                    } else if (pressedButtons & Qt.RightButton) {
-                        renderer3D.panByMouse(dx, dy)
-                    }
-                    lastX = mouse.x
-                    lastY = mouse.y
-                }
-
-                onWheel: function(wheel) {
-                    console.log("Wheel event: angleDelta.y=", wheel.angleDelta.y)
-                    zoom += wheel.angleDelta.y / 1200
-                    zoom = Math.max(0.1, Math.min(3.0, zoom))
-                    console.log("Zoom value:", zoom)
-                    zoomSlider.value = zoom
-                    renderer3D.zoom = zoom
-                }
-            }
         }
     }
 
@@ -426,7 +422,7 @@ Page {
             localPath = localPath.replace(/\\/g, "/")
             console.log("QML: 转换路径分隔符后:", localPath)
             
-            // 直接设置 renderer3D.modelPath，绕过 currentFile
+            // 直接设置 renderer3D.modelPath，Qml3DRenderer 会自动加载模型
             console.log("QML: 直接设置 renderer3D.modelPath:", localPath)
             renderer3D.modelPath = localPath
             console.log("QML: renderer3D.modelPath after:", renderer3D.modelPath)

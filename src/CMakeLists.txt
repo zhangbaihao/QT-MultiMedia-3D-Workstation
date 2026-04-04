@@ -39,7 +39,7 @@ set(QML_FILES
     qml/HomePage.qml
     qml/ModelViewerPage.qml
     qml/VideoPlayerPage.qml
-    qml/ControlPanel.qml
+    qml/ControlsPage.qml
 )
 
 qt_add_qml_module(QT-MultiMedia-3D-Workstation

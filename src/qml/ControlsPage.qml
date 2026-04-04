@@ -1,11 +1,10 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import Qt.labs.platform 1.1
 
 Page {
     objectName: "controls"
-    background: Rectangle { color: "#f5f5f5" }
+    background: Rectangle { color: "#f8f9fa" }
 
     // 示例数据
     property var listModelData: [
@@ -22,15 +21,16 @@ Page {
 
         ColumnLayout {
             width: parent.width
-            spacing: 25
-            anchors.margins: 30
+            spacing: 20
+            anchors.margins: 20
 
             // 页面标题
             Label {
                 text: "QML 控件展示"
-                font.pixelSize: 28
+                font.pixelSize: 24
                 font.weight: Font.Bold
                 color: "#333333"
+                Layout.alignment: Qt.AlignHCenter
             }
 
             // 第一行：基本控件

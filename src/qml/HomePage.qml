@@ -4,7 +4,7 @@ import QtQuick.Layouts 1.15
 
 Page {
     objectName: "home"
-    background: Rectangle { color: "#f5f5f5" }
+    background: Rectangle { color: "#f8f9fa" }
     
     // 定义导航信号
     signal navigateToPage(int pageIndex)
@@ -23,7 +23,7 @@ Page {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 200
                 color: "#ffffff"
-                radius: 12
+                radius: 16
                 border.color: "#e0e0e0"
                 border.width: 1
 
@@ -60,6 +60,7 @@ Page {
                             desc: "支持STL/PLY格式，提供颜色控制、信息显示等功能",
                             icon: "🎲",
                             color: "#e3f2fd",
+                            accentColor: "#0078d4",
                             pageIndex: 1
                         },
                         {
@@ -67,6 +68,7 @@ Page {
                             desc: "支持多种格式，提供进度条、快进快退等控制功能",
                             icon: "🎬",
                             color: "#fce4ec",
+                            accentColor: "#e81123",
                             pageIndex: 2
                         },
                         {
@@ -74,6 +76,7 @@ Page {
                             desc: "展示各种QML控件用法，包括自定义控件",
                             icon: "🎨",
                             color: "#f3e5f5",
+                            accentColor: "#5c2d91",
                             pageIndex: 3
                         }
                     ]
@@ -82,9 +85,12 @@ Page {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 220
                         color: "#ffffff"
-                        radius: 12
+                        radius: 16
                         border.color: "#e0e0e0"
                         border.width: 1
+                        Behavior on scale {
+                            NumberAnimation { duration: 200 }
+                        }
 
                         ColumnLayout {
                             anchors.fill: parent
@@ -131,13 +137,14 @@ Page {
                                 Layout.preferredHeight: 40
 
                                 background: Rectangle {
-                                    color: parent.pressed ? "#005a9e" : "#0078d4"
-                                    radius: 6
+                                    color: parent.pressed ? Qt.darker(modelData.accentColor, 1.2) : modelData.accentColor
+                                    radius: 8
                                 }
 
                                 contentItem: Text {
                                     text: parent.text
                                     font.pixelSize: 14
+                                    font.weight: Font.Medium
                                     color: "#ffffff"
                                     horizontalAlignment: Text.AlignHCenter
                                     verticalAlignment: Text.AlignVCenter
@@ -151,6 +158,13 @@ Page {
 
                         MouseArea {
                             anchors.fill: parent
+                            hoverEnabled: true
+                            onEntered: {
+                                parent.scale = 1.02
+                            }
+                            onExited: {
+                                parent.scale = 1.0
+                            }
                             onClicked: {
                                 navigateToPage(modelData.pageIndex)
                             }
@@ -164,7 +178,7 @@ Page {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 150
                 color: "#ffffff"
-                radius: 12
+                radius: 16
                 border.color: "#e0e0e0"
                 border.width: 1
 

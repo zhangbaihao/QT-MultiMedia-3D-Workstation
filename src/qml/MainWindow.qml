@@ -11,58 +11,175 @@ ApplicationWindow {
     height: 900
     title: "QT-MultiMedia 3D Workstation"
     visible: true
-    color: "#f5f5f5"
+    color: "#f8f9fa"
 
     // 顶部导航栏
-    header: TabBar {
-        id: tabBar
-        height: 60
-        background: Rectangle {
+    header: Rectangle {
+        id: headerBackground
+        height: 80
+        color: "#f8f9fa"
+
+        Rectangle {
+            anchors {
+                fill: parent
+                topMargin: 10
+                leftMargin: 10
+                rightMargin: 10
+                bottomMargin: 10
+            }
             color: "#ffffff"
             border.color: "#e0e0e0"
             border.width: 1
-        }
+            radius: 10
 
-        TabButton {
-            text: "首页"
-            onClicked: swipeView.currentIndex = 0
-        }
-        TabButton {
-            text: "3D模型"
-            onClicked: swipeView.currentIndex = 1
-        }
-        TabButton {
-            text: "视频播放"
-            onClicked: swipeView.currentIndex = 2
-        }
-        TabButton {
-            text: "控件展示"
-            onClicked: swipeView.currentIndex = 3
+            TabBar {
+                id: tabBar
+                anchors.fill: parent
+                background: Rectangle {
+                    color: "transparent"
+                }
+
+                TabButton {
+                    text: "首页"
+                    onClicked: stackLayout.currentIndex = 0
+                    padding: 20
+                    font.pixelSize: 14
+                    font.weight: Font.Medium
+                    background: Rectangle {
+                        color: tabBar.currentIndex === 0 ? "#0078d4" : "transparent"
+                        radius: 8
+                        anchors.fill: parent
+                        anchors.margins: 8
+                        Behavior on color {
+                            ColorAnimation { duration: 200 }
+                        }
+                    }
+                    contentItem: Text {
+                        text: parent.text
+                        color: tabBar.currentIndex === 0 ? "#ffffff" : "#333333"
+                        font: parent.font
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        Behavior on color {
+                            ColorAnimation { duration: 200 }
+                        }
+                    }
+                }
+                TabButton {
+                    text: "3D模型"
+                    onClicked: stackLayout.currentIndex = 1
+                    padding: 20
+                    font.pixelSize: 14
+                    font.weight: Font.Medium
+                    background: Rectangle {
+                        color: tabBar.currentIndex === 1 ? "#0078d4" : "transparent"
+                        radius: 8
+                        anchors.fill: parent
+                        anchors.margins: 8
+                        Behavior on color {
+                            ColorAnimation { duration: 200 }
+                        }
+                    }
+                    contentItem: Text {
+                        text: parent.text
+                        color: tabBar.currentIndex === 1 ? "#ffffff" : "#333333"
+                        font: parent.font
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        Behavior on color {
+                            ColorAnimation { duration: 200 }
+                        }
+                    }
+                }
+                TabButton {
+                    text: "视频播放"
+                    onClicked: stackLayout.currentIndex = 2
+                    padding: 20
+                    font.pixelSize: 14
+                    font.weight: Font.Medium
+                    background: Rectangle {
+                        color: tabBar.currentIndex === 2 ? "#0078d4" : "transparent"
+                        radius: 8
+                        anchors.fill: parent
+                        anchors.margins: 8
+                        Behavior on color {
+                            ColorAnimation { duration: 200 }
+                        }
+                    }
+                    contentItem: Text {
+                        text: parent.text
+                        color: tabBar.currentIndex === 2 ? "#ffffff" : "#333333"
+                        font: parent.font
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        Behavior on color {
+                            ColorAnimation { duration: 200 }
+                        }
+                    }
+                }
+                TabButton {
+                    text: "控件展示"
+                    onClicked: stackLayout.currentIndex = 3
+                    padding: 20
+                    font.pixelSize: 14
+                    font.weight: Font.Medium
+                    background: Rectangle {
+                        color: tabBar.currentIndex === 3 ? "#0078d4" : "transparent"
+                        radius: 8
+                        anchors.fill: parent
+                        anchors.margins: 8
+                        Behavior on color {
+                            ColorAnimation { duration: 200 }
+                        }
+                    }
+                    contentItem: Text {
+                        text: parent.text
+                        color: tabBar.currentIndex === 3 ? "#ffffff" : "#333333"
+                        font: parent.font
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        Behavior on color {
+                            ColorAnimation { duration: 200 }
+                        }
+                    }
+                }
+            }
         }
     }
 
     // 主内容区域
-    SwipeView {
-        id: swipeView
-        anchors.fill: parent
+    StackLayout {
+        id: stackLayout
+        anchors {
+            fill: parent
+            margins: 10
+        }
         currentIndex: 0
-        interactive: false  // 禁用滑动切换，只通过TabBar切换
+        clip: true
 
         // 首页
         HomePage {
+            clip: true
             onNavigateToPage: function(pageIndex) {
-                swipeView.currentIndex = pageIndex
+                stackLayout.currentIndex = pageIndex
+                tabBar.currentIndex = pageIndex
             }
         }
 
         // 3D模型页面
-        ModelViewerPage {}
+        ModelViewerPage {
+            clip: true
+        }
 
         // 视频播放页面
-        VideoPlayerPage {}
+        VideoPlayerPage {
+            clip: true
+        }
 
         // 控件展示页面
-        ControlPanel {}
+        ControlsPage {
+            clip: true
+        }
     }
 
     function showToast(message) {

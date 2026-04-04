@@ -25,6 +25,9 @@ Page {
             Layout.fillWidth: true
             Layout.fillHeight: true
             color: "#000000"
+            radius: 16
+            anchors.margins: 10
+            Layout.margins: 0
 
             // 视频信息显示
             Rectangle {
@@ -32,11 +35,11 @@ Page {
                 anchors.top: parent.top
                 anchors.margins: 20
                 width: 200
-                height: 80
-                color: "#000000"
-                radius: 8
-                opacity: 0.7
-                visible: currentFile !== ""
+                    height: 80
+                    color: "#000000"
+                    radius: 12
+                    opacity: 0.7
+                    visible: currentFile !== ""
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -77,15 +80,18 @@ Page {
         // 控制栏
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 100
+            Layout.preferredHeight: 120
             color: "#2d2d2d"
             border.color: "#3d3d3d"
             border.width: 1
+            radius: 16
+            anchors.margins: 10
+            Layout.margins: 0
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 10
-                spacing: 10
+                anchors.margins: 20
+                spacing: 15
 
                 // 进度条
                 RowLayout {
@@ -113,15 +119,18 @@ Page {
                             x: positionSlider.leftPadding
                             y: positionSlider.topPadding + positionSlider.availableHeight / 2 - height / 2
                             width: positionSlider.availableWidth
-                            height: 4
-                            radius: 2
+                            height: 6
+                            radius: 3
                             color: "#4d4d4d"
 
                             Rectangle {
                                 width: positionSlider.visualPosition * parent.width
                                 height: parent.height
                                 color: "#0078d4"
-                                radius: 2
+                                radius: 3
+                                Behavior on width {
+                                    NumberAnimation { duration: 100 }
+                                }
                             }
                         }
 
@@ -134,6 +143,9 @@ Page {
                             color: positionSlider.pressed ? "#ffffff" : "#0078d4"
                             border.color: "#ffffff"
                             border.width: 2
+                            Behavior on color {
+                                ColorAnimation { duration: 200 }
+                            }
                         }
                     }
 
@@ -148,7 +160,7 @@ Page {
                 // 控制按钮
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 15
+                    spacing: 20
                     Layout.alignment: Qt.AlignHCenter
 
                     // 打开文件按钮
@@ -274,7 +286,7 @@ Page {
 
                         background: Rectangle {
                             color: "#3d3d3d"
-                            radius: 4
+                            radius: 8
                             border.color: "#4d4d4d"
                             border.width: 1
                         }
@@ -322,15 +334,18 @@ Page {
                             x: volumeSlider.leftPadding
                             y: volumeSlider.topPadding + volumeSlider.availableHeight / 2 - height / 2
                             width: volumeSlider.availableWidth
-                            height: 4
-                            radius: 2
+                            height: 6
+                            radius: 3
                             color: "#4d4d4d"
 
                             Rectangle {
                                 width: volumeSlider.visualPosition * parent.width
                                 height: parent.height
                                 color: "#0078d4"
-                                radius: 2
+                                radius: 3
+                                Behavior on width {
+                                    NumberAnimation { duration: 100 }
+                                }
                             }
                         }
 
@@ -341,6 +356,9 @@ Page {
                             height: 12
                             radius: 6
                             color: "#ffffff"
+                            Behavior on x {
+                                NumberAnimation { duration: 100 }
+                            }
                         }
                     }
                 }

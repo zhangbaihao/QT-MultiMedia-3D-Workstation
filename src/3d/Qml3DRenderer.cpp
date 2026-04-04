@@ -145,6 +145,11 @@ void Qml3DRenderer::panByMouse(qreal dx, qreal dy)
     qreal panSpeed = 0.005 * m_zoom;
     m_cameraX += dx * panSpeed;
     m_cameraY += dy * panSpeed;
+    
+    // 限制相机位置，确保模型不会被平移到视图区域之外
+    m_cameraX = qBound(-2.0, m_cameraX, 2.0);
+    m_cameraY = qBound(-2.0, m_cameraY, 2.0);
+    
     emit cameraXChanged();
     emit cameraYChanged();
     update();
@@ -288,33 +293,8 @@ QSGNode *Qml3DRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *d
     qreal cy = height() / 2;
     qreal size = 100 * m_zoom;
     
-    // 立方体顶点
-    QVector3D cubeVertices[8] = {
-        QVector3D(-1, -1, -1),
-        QVector3D(1, -1, -1),
-        QVector3D(1, 1, -1),
-        QVector3D(-1, 1, -1),
-        QVector3D(-1, -1, 1),
-        QVector3D(1, -1, 1),
-        QVector3D(1, 1, 1),
-        QVector3D(-1, 1, 1)
-    };
-    
-    // 立方体边
-    int cubeEdges[12][2] = {
-        {0, 1}, {1, 2}, {2, 3}, {3, 0},
-        {4, 5}, {5, 6}, {6, 7}, {7, 4},
-        {0, 4}, {1, 5}, {2, 6}, {3, 7}
-    };
-    
-    // 创建或更新几何节点
     if (!node) {
         node = new QSGGeometryNode();
-        // 12条边，每条边2个顶点
-        QSGGeometry *geometry = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), 24);
-        geometry->setDrawingMode(QSGGeometry::DrawLines);
-        node->setGeometry(geometry);
-        node->setFlag(QSGNode::OwnsGeometry);
         QSGFlatColorMaterial *material = new QSGFlatColorMaterial();
         material->setColor(m_modelColor);
         node->setMaterial(material);
@@ -322,24 +302,88 @@ QSGNode *Qml3DRenderer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *d
     }
     
     QSGGeometry *geometry = node->geometry();
-    QSGGeometry::Point2D *vertices = geometry->vertexDataAsPoint2D();
+    QSGGeometry::Point2D *vertices = nullptr;
     
-    if (vertices) {
-        // 绘制立方体
-        for (int i = 0; i < 12; i++) {
-            for (int j = 0; j < 2; j++) {
-                QVector3D vertex = cubeVertices[cubeEdges[i][j]];
-                // 应用旋转
-                QVector3D rotated = applyRotation(vertex);
-                // 应用透视投影
-                float perspective = m_cameraZ / (m_cameraZ - rotated.z() * 0.5f);
-                perspective = qBound(0.1f, perspective, 10.0f);
-                // 计算屏幕坐标
-                vertices[i * 2 + j].x = cx + rotated.x() * size * perspective - m_cameraX * 100;
-                vertices[i * 2 + j].y = cy - rotated.y() * size * perspective + m_cameraY * 100;
-            }
+    if (m_vertices.isEmpty()) {
+        // 没有模型加载，绘制默认立方体
+        if (!geometry || geometry->vertexCount() != 24) {
+            // 12条边，每条边2个顶点
+            geometry = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), 24);
+            geometry->setDrawingMode(QSGGeometry::DrawLines);
+            node->setGeometry(geometry);
+            node->setFlag(QSGNode::OwnsGeometry);
         }
         
+        vertices = geometry->vertexDataAsPoint2D();
+        
+        if (vertices) {
+            // 立方体顶点
+            QVector3D cubeVertices[8] = {
+                QVector3D(-1, -1, -1),
+                QVector3D(1, -1, -1),
+                QVector3D(1, 1, -1),
+                QVector3D(-1, 1, -1),
+                QVector3D(-1, -1, 1),
+                QVector3D(1, -1, 1),
+                QVector3D(1, 1, 1),
+                QVector3D(-1, 1, 1)
+            };
+            
+            // 立方体边
+            int cubeEdges[12][2] = {
+                {0, 1}, {1, 2}, {2, 3}, {3, 0},
+                {4, 5}, {5, 6}, {6, 7}, {7, 4},
+                {0, 4}, {1, 5}, {2, 6}, {3, 7}
+            };
+            
+            // 绘制立方体
+            for (int i = 0; i < 12; i++) {
+                for (int j = 0; j < 2; j++) {
+                    QVector3D vertex = cubeVertices[cubeEdges[i][j]];
+                    // 应用旋转
+                    QVector3D rotated = applyRotation(vertex);
+                    // 应用透视投影
+                    float perspective = m_cameraZ / (m_cameraZ - rotated.z() * 0.5f);
+                    perspective = qBound(0.1f, perspective, 10.0f);
+                    // 计算屏幕坐标
+                    vertices[i * 2 + j].x = cx + rotated.x() * size * perspective - m_cameraX * 100;
+                    vertices[i * 2 + j].y = cy - rotated.y() * size * perspective + m_cameraY * 100;
+                }
+            }
+        }
+    } else {
+        // 有模型加载，绘制模型
+        int vertexCount = m_indices.size() * 2; // 每条边2个顶点
+        if (!geometry || geometry->vertexCount() != vertexCount) {
+            geometry = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), vertexCount);
+            geometry->setDrawingMode(QSGGeometry::DrawLines);
+            node->setGeometry(geometry);
+            node->setFlag(QSGNode::OwnsGeometry);
+        }
+        
+        vertices = geometry->vertexDataAsPoint2D();
+        
+        if (vertices) {
+            // 绘制模型的边
+            for (int i = 0; i < m_indices.size(); i += 3) {
+                // 绘制三角形的三条边
+                uint indices[] = {m_indices[i], m_indices[i+1], m_indices[i+1], m_indices[i+2], m_indices[i+2], m_indices[i]};
+                for (int j = 0; j < 6; j++) {
+                    QVector3D vertex = m_vertices[indices[j]].position;
+                    // 应用旋转
+                    QVector3D rotated = applyRotation(vertex);
+                    // 应用透视投影
+                    float perspective = m_cameraZ / (m_cameraZ - rotated.z() * 0.5f);
+                    perspective = qBound(0.1f, perspective, 10.0f);
+                    // 计算屏幕坐标
+                    vertices[(i/3)*6 + j].x = cx + rotated.x() * size * perspective - m_cameraX * 100;
+                    vertices[(i/3)*6 + j].y = cy - rotated.y() * size * perspective + m_cameraY * 100;
+                }
+            }
+        }
+    }
+    
+    if (vertices) {
         geometry->markVertexDataDirty();
         QSGFlatColorMaterial *material = static_cast<QSGFlatColorMaterial *>(node->material());
         if (material) {

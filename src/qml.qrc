@@ -6,6 +6,6 @@
         <file>qml/HomePage.qml</file>
         <file>qml/ModelViewerPage.qml</file>
         <file>qml/VideoPlayerPage.qml</file>
-        <file>qml/ControlPanel.qml</file>
+        <file>qml/ControlsPage.qml</file>
     </qresource>
 </RCC>
