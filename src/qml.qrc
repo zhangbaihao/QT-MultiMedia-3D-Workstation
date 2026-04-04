@@ -10,5 +10,6 @@
         <file>qml/VideoPlayerPage.qml</file>
         <file>qml/ControlsPage.qml</file>
         <file>qml/TestPage.qml</file>
+        <file>qml/CameraController.qml</file>
     </qresource>
 </RCC>

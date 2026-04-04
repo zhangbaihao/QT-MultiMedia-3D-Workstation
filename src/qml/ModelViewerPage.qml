@@ -3,6 +3,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import Qt.labs.platform 1.1
 import QtQuick3D
+import QtQuick3D.Helpers
 import QtQuick3D.AssetUtils
 import QtMultiMedia3D 1.0
 
@@ -30,6 +31,16 @@ Page {
     property color modelColor: "#0078d4"
     property real zoom: 1.0
     property bool autoRotate: false
+
+    // === 将相机声明移动到页面的顶层 ===
+    PerspectiveCamera {
+        id: mainCamera
+        position: Qt.vector3d(0, 0, 20)
+        fieldOfView: 45
+        eulerRotation: Qt.vector3d(0, 0, 0)
+        clipFar: 10000
+        clipNear: 1
+    }
 
     RowLayout {
         anchors.fill: parent
@@ -227,11 +238,13 @@ Page {
                                 flat: true
 
                                 onClicked: {
-                                    camera.position = Qt.vector3d(0, 0, 10)
-                                    camera.rotation = Qt.vector3d(0, 0, 0)
+                                    // 修正：这里应该使用 mainCamera
+                                    mainCamera.position = Qt.vector3d(0, 0, 20)  // 改为 20
+                                    mainCamera.eulerRotation = Qt.vector3d(0, 0, 0)
                                     zoom = 1.0
                                     zoomSlider.value = 1.0
                                     autoRotate = false
+                                    console.log("重置视图完成")
                                 }
                             }
                         }
@@ -299,18 +312,30 @@ Page {
             radius: 16
 
             View3D {
+                id: view3D
                 anchors.fill: parent
-                camera: camera
+                camera: mainCamera  // 引用顶层声明的相机
 
-                PerspectiveCamera {
-                    id: camera
-                    position: Qt.vector3d(0, 0, 10)
-                    fieldOfView: 45
+                // 设置场景环境
+                environment: SceneEnvironment {
+                    clearColor: "#1e1e1e"
+                    backgroundMode: SceneEnvironment.Color
                 }
 
+                // 添加光源
                 DirectionalLight {
                     id: light
                     position: Qt.vector3d(5, 5, 5)
+                    eulerRotation.x: -30
+                    brightness: 1.5
+                }
+
+                // 添加相机控制器
+                OrbitCameraController {
+                    id: orbitController
+                    camera: mainCamera  // 引用同一个相机
+                    origin: Qt.vector3d(0, 0, 0)
+                    anchors.fill: parent
                 }
 
                 // 使用自定义的 ModelLoader 加载模型
@@ -318,18 +343,20 @@ Page {
                     id: model
                     materials: [material]
                     scale: Qt.vector3d(zoom, zoom, zoom)
-                    visible: currentFile !== ""
+                    position: Qt.vector3d(0, 0, 0)
+                    rotation: Qt.vector3d(0, 0, 0)
+                    visible: modelLoader.loaded
                     
                     // 使用自定义的 ModelLoader 作为几何数据
                     geometry: ModelLoader {
                         id: modelLoader
-                        source: currentFile
+                        // 不直接绑定到 currentFile，而是通过手动设置
+                        source: ""
                         onLoadedChanged: {
                             if (modelLoader.loaded) {
                                 modelStatus = "已加载"
-                                vertexCount = modelLoader.vertexCount
-                                faceCount = modelLoader.faceCount
                                 console.log("QML: 模型加载成功:", modelLoader.vertexCount, "顶点,", modelLoader.faceCount, "面")
+                                console.log("QML: 模型边界框:", modelLoader.boundingBoxMin, "到", modelLoader.boundingBoxMax)
                             } else {
                                 modelStatus = "加载失败"
                                 console.log("QML: 模型加载失败")
@@ -353,42 +380,16 @@ Page {
                     id: material
                     diffuseColor: modelColor
                 }
-            }
-
-            // 鼠标交互
-            MouseArea {
-                anchors.fill: parent
-                acceptedButtons: Qt.LeftButton | Qt.RightButton
-
-                property real lastX: 0
-                property real lastY: 0
-
-                onPressed: function(mouse) {
-                    lastX = mouse.x
-                    lastY = mouse.y
-                }
-
-                onPositionChanged: function(mouse) {
-                    var dx = mouse.x - lastX
-                    var dy = mouse.y - lastY
-                    if (pressedButtons & Qt.LeftButton) {
-                        // 旋转相机
-                        camera.rotation.x -= dy * 0.5
-                        camera.rotation.y += dx * 0.5
-                    } else if (pressedButtons & Qt.RightButton) {
-                        // 平移相机
-                        camera.position.x -= dx * 0.01
-                        camera.position.y += dy * 0.01
-                    }
-                    lastX = mouse.x
-                    lastY = mouse.y
-                }
-
-                onWheel: function(wheel) {
-                    zoom += wheel.angleDelta.y / 300
-                    zoom = Math.max(0.1, Math.min(5.0, zoom))
+                
+                // 组件完成时添加调试信息
+                Component.onCompleted: {
+                    console.log("View3D 组件完成初始化")
+                    console.log("相机对象:", mainCamera)
+                    console.log("相机位置:", mainCamera.position)
                 }
             }
+
+            // 鼠标交互由 OrbitCameraController 处理
 
             // 视图控制提示
             Rectangle {
@@ -487,16 +488,24 @@ Page {
             console.log("QML: 转换为本地文件路径:", localPath)
             
             // 同时更新 currentFile 以便在界面上显示和加载模型
-            currentFile = localPath
+            currentFile = fileUrl // 保持原始 URL 用于显示
             console.log("QML: 更新 currentFile 为:", currentFile)
             
-            // 手动触发模型加载
-            modelLoader.source = currentFile
+            // 手动触发模型加载 - 使用本地文件路径
+            modelLoader.source = localPath
             console.log("QML: 手动设置 ModelLoader source 为:", modelLoader.source)
         }
         
         onRejected: {
             console.log("QML: 文件对话框被取消")
         }
+    }
+    
+    // 页面完成时添加调试信息
+    Component.onCompleted: {
+        console.log("=== 页面初始化完成 ===")
+        console.log("mainCamera:", mainCamera)
+        console.log("相机位置:", mainCamera.position)
+        console.log("相机旋转:", mainCamera.eulerRotation)
     }
 }

@@ -5,7 +5,7 @@ project(OpenGLViewer)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 COMPONENTS Widgets OpenGL REQUIRED)
+find_package(Qt6 COMPONENTS Widgets OpenGL OpenGLWidgets REQUIRED)
 
 # 添加Assimp库
 set(assimp_DIR "D:/code/vcpkg/installed/x64-windows/share/assimp")
@@ -25,7 +25,7 @@ set(HEADERS
     GLCamera.h
 )
 
-add_executable(OpenGLViewer
+add_library(OpenGLViewer
     ${SOURCES}
     ${HEADERS}
 )
@@ -33,6 +33,7 @@ add_executable(OpenGLViewer
 target_link_libraries(OpenGLViewer PRIVATE
     Qt6::Widgets
     Qt6::OpenGL
+    Qt6::OpenGLWidgets
     assimp::assimp
 )
 
@@ -52,10 +53,16 @@ endforeach()
 
 # 安装规则
 install(TARGETS OpenGLViewer
-    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+    LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
 
 # 安装着色器文件
 install(DIRECTORY shaders
     DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+)
+
+# 安装头文件
+install(FILES ${HEADERS}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/opengl-viewer
 )

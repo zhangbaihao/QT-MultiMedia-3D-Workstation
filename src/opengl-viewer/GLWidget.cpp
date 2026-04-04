@@ -39,10 +39,15 @@ void GLWidget::loadModel(const QString &path)
         m_camera->setPosition(QVector3D(0, 0, distance));
         
         // 发送模型加载完成信号
+        QVector3D minBox = m_model->boundingBoxMin();
+        QVector3D maxBox = m_model->boundingBoxMax();
+        QString boundingBox = QString("(%1, %2, %3) to (%4, %5, %6)")
+            .arg(minBox.x()).arg(minBox.y()).arg(minBox.z())
+            .arg(maxBox.x()).arg(maxBox.y()).arg(maxBox.z());
         emit modelLoaded(
             m_model->vertexCount(),
             m_model->faceCount(),
-            QString("%1 to %2").arg(m_model->boundingBoxMin().toString()).arg(m_model->boundingBoxMax().toString())
+            boundingBox
         );
         
         update();
