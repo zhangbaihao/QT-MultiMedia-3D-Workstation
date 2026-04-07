@@ -1,4 +1,4 @@
-#include "ModelLoader.h"
+#include "quickModelLoader.h"
 #include <QDebug>
 
 ModelLoader::ModelLoader(QQuick3DObject *parent)
@@ -54,8 +54,15 @@ QVector3D ModelLoader::boundingBoxMax() const
     return m_boundingBoxMax;
 }
 
+void ModelLoader::loadModel(const QString &path)
+{
+    qDebug() << "ModelLoader::loadModel(const QString &path) called with:" << path;
+    setSource(path);
+}
+
 void ModelLoader::loadModel()
 {
+    qDebug() << "ModelLoader::loadModel() called";
     m_loaded = false;
     m_vertices.clear();
     m_indices.clear();
@@ -65,6 +72,7 @@ void ModelLoader::loadModel()
     m_boundingBoxMax = QVector3D(0, 0, 0);
 
     if (m_source.isEmpty()) {
+        qDebug() << "ModelLoader::loadModel() - source is empty";
         emit loadedChanged();
         emit vertexCountChanged();
         emit faceCountChanged();
@@ -74,8 +82,15 @@ void ModelLoader::loadModel()
 
     qDebug() << "Loading model from:" << m_source;
 
+    // 处理file:///开头的URL，转换为本地文件路径
+    QString filePath = m_source;
+    if (filePath.startsWith("file:///")) {
+        filePath = filePath.mid(8); // 移除file:///前缀
+        qDebug() << "Converted file path:" << filePath;
+    }
+
     Assimp::Importer importer;
-    const aiScene *scene = importer.ReadFile(m_source.toStdString(), 
+    const aiScene *scene = importer.ReadFile(filePath.toStdString(), 
         aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals | aiProcess_CalcTangentSpace);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
@@ -84,6 +99,7 @@ void ModelLoader::loadModel()
         emit vertexCountChanged();
         emit faceCountChanged();
         emit boundingBoxChanged();
+        emit modelLoadFailed();
         return;
     }
 
@@ -97,6 +113,12 @@ void ModelLoader::loadModel()
 
     qDebug() << "Model loaded successfully:" << m_vertexCount << "vertices," << m_faceCount << "faces";
     qDebug() << "Bounding box:" << m_boundingBoxMin << "to" << m_boundingBoxMax;
+
+    // 发射modelLoaded信号
+    QString boundingBox = QString("%1,%2,%3 to %4,%5,%6")
+        .arg(m_boundingBoxMin.x()).arg(m_boundingBoxMin.y()).arg(m_boundingBoxMin.z())
+        .arg(m_boundingBoxMax.x()).arg(m_boundingBoxMax.y()).arg(m_boundingBoxMax.z());
+    emit modelLoaded(m_vertexCount, m_faceCount, boundingBox);
 
     emit loadedChanged();
     emit vertexCountChanged();

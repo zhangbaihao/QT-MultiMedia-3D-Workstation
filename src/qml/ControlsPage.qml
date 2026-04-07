@@ -231,7 +231,7 @@ Page {
                                 to: 100
                                 value: 50
                                 contentItem: Text {
-                                    text: parent.text
+                                    text: parent.displayText
                                     color: textColor
                                 }
                                 background: Rectangle {
@@ -877,7 +877,8 @@ Page {
                     }
 
                     RowLayout {
-                        anchors.fill: parent
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
                         spacing: 20
 
                         // 旋转动画

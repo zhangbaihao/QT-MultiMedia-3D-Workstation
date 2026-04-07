@@ -1,15 +1,11 @@
-<!DOCTYPE RCC>
 <RCC version="1.0">
     <qresource prefix="/QtMultiMedia3D/qml">
         <file>qml/main.qml</file>
-        <file>qml/MainWindow.qml</file>
         <file>qml/HomePage.qml</file>
         <file>qml/ModelViewerPage.qml</file>
-        <file>qml/ModelViewerOpenglPage.qml</file>
-        <file>qml/ModelViewerOpenGLPage.qml</file>
         <file>qml/VideoPlayerPage.qml</file>
         <file>qml/ControlsPage.qml</file>
-        <file>qml/TestPage.qml</file>
-        <file>qml/CameraController.qml</file>
+        <file>qml/ModelViewerOther.qml</file>
+        <file>qml/MainWindow.qml</file>
     </qresource>
 </RCC>

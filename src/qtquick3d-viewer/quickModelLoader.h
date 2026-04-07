@@ -38,12 +38,16 @@ public:
     QVector3D boundingBoxMin() const;
     QVector3D boundingBoxMax() const;
 
+    Q_INVOKABLE void loadModel(const QString &path);
+
 signals:
     void sourceChanged();
     void vertexCountChanged();
     void faceCountChanged();
     void loadedChanged();
     void boundingBoxChanged();
+    void modelLoaded(int vertexCount, int faceCount, const QString &boundingBox);
+    void modelLoadFailed();
 
 private:
     void loadModel();

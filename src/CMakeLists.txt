@@ -1,11 +1,25 @@
+# 设置vcpkg工具链文件
+set(CMAKE_TOOLCHAIN_FILE "D:/code/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
+
+# 查找 Qt 模块
+find_package(Qt6 COMPONENTS Core Gui Qml Quick Widgets Multimedia Quick3D REQUIRED)
+
 # 主应用程序
 add_executable(QT-MultiMedia-3D-Workstation
     main.cpp
     qml.qrc
 )
 
-# 查找 Qt 模块
-find_package(Qt6 COMPONENTS Core Gui Qml Quick OpenGL OpenGLWidgets Widgets Multimedia Quick3D REQUIRED)
+
+
+# 查找 Assimp 库
+set(assimp_DIR "D:/code/vcpkg/installed/x64-windows/share/assimp")
+find_package(assimp REQUIRED)
+
+
+
+
+# 移除VTK库，使用Qt Quick 3D
 
 # 添加 Assimp 头文件搜索路径
 target_include_directories(QT-MultiMedia-3D-Workstation PRIVATE
@@ -18,7 +32,7 @@ add_subdirectory(imageprocessing)
 add_subdirectory(thread)
 add_subdirectory(memory)
 add_subdirectory(qtquick3d-viewer)
-add_subdirectory(opengl-viewer)
+add_subdirectory(other-viewer)
 
 # 链接库
 target_link_libraries(QT-MultiMedia-3D-Workstation PRIVATE
@@ -26,17 +40,16 @@ target_link_libraries(QT-MultiMedia-3D-Workstation PRIVATE
     Qt6::Gui
     Qt6::Qml
     Qt6::Quick
-    Qt6::OpenGL
-    Qt6::OpenGLWidgets
     Qt6::Widgets
     Qt6::Multimedia
     Qt6::Quick3D
     qtquick3d-viewer
-    OpenGLViewer
     multimedia
     imageprocessing
     thread
     memory
+    other-viewer
+    opengl32
 )
 
 # 打包功能
@@ -104,6 +117,7 @@ set(QML_FILES
     qml/MainWindow.qml
     qml/HomePage.qml
     qml/ModelViewerPage.qml
+    qml/ModelViewerOther.qml
     qml/VideoPlayerPage.qml
     qml/ControlsPage.qml
 )

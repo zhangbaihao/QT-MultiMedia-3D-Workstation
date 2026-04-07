@@ -3,7 +3,6 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import Qt.labs.platform 1.1
 import QtQuick3D
-import QtQuick3D.Helpers
 import QtQuick3D.AssetUtils
 import QtMultiMedia3D 1.0
 
@@ -330,12 +329,106 @@ Page {
                     brightness: 1.5
                 }
 
-                // 添加相机控制器
-                OrbitCameraController {
-                    id: orbitController
-                    camera: mainCamera  // 引用同一个相机
-                    origin: Qt.vector3d(0, 0, 0)
+                // 相机控制
+                MouseArea {
                     anchors.fill: parent
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+                    property point lastMousePosLeft: Qt.point(0, 0)
+                    property point lastMousePosRight: Qt.point(0, 0)
+                    property real offsetX: 0
+                    property real offsetY: 0
+                    property real rotationX: 0
+                    property real rotationY: 0
+                    property real scaleFactor: 1.0
+                    property real translationX: 0
+                    property real translationY: 0
+                    property real autoRotateTime: 0
+                    property real rotationSpeed: 0.2
+                    property real zoomSpeed: 0.1
+                    property real panSpeed: 0.05
+
+                    onPressed: function (mouse) {
+                        if (mouse.button === Qt.LeftButton) {
+                            lastMousePosLeft = Qt.point(mouse.x, mouse.y);
+                        } else if (mouse.button === Qt.RightButton) {
+                            lastMousePosRight = Qt.point(mouse.x, mouse.y);
+                        }
+                    }
+
+                    onPositionChanged: function (mouse) {
+                        if (mouse.buttons & Qt.LeftButton) {
+                            var dx = mouse.x - lastMousePosLeft.x;
+                            var dy = mouse.y - lastMousePosLeft.y;
+                            
+                            // 计算旋转角度
+                            var sensitivity = rotationSpeed * 0.01;
+                            var pitch = dy * sensitivity;
+                            var yaw = dx * sensitivity;
+                            
+                            // 直接使用欧拉角旋转（暂时替代四元数）
+                            var currentRotation = mainCamera.eulerRotation;
+                            currentRotation.x += pitch * 180 / Math.PI;
+                            currentRotation.y += yaw * 180 / Math.PI;
+                            
+                            // 限制俯仰角度，避免万向锁
+                            currentRotation.x = Math.max(-89, Math.min(89, currentRotation.x));
+                            
+                            mainCamera.eulerRotation = currentRotation;
+                            
+                            lastMousePosLeft = Qt.point(mouse.x, mouse.y);
+                        } else if (mouse.buttons & Qt.RightButton) {
+                            var dx = mouse.x - lastMousePosRight.x;
+                            var dy = mouse.y - lastMousePosRight.y;
+                            
+                            // 平移相机
+                            var panX = -dx * panSpeed;
+                            var panY = dy * panSpeed;
+                            
+                            // 计算相机坐标系下的平移
+                            var cameraForward = mainCamera.position.minus(mainCamera.viewCenter).normalized();
+                            var cameraRight = Qt.vector3d.crossProduct(mainCamera.upVector, cameraForward).normalized();
+                            var cameraUp = mainCamera.upVector;
+
+                            var panOffset = cameraRight.times(panX).plus(cameraUp.times(panY));
+
+                            // 更新相机位置和观察中心
+                            mainCamera.position = mainCamera.position.plus(panOffset);
+                            mainCamera.viewCenter = mainCamera.viewCenter.plus(panOffset);
+                            
+                            lastMousePosRight = Qt.point(mouse.x, mouse.y);
+                        }
+                    }
+
+                    onWheel: function (wheel) {
+                        // 缩放相机
+                        var zoomFactor = 1 + wheel.angleDelta.y * zoomSpeed * 0.01;
+                        scaleFactor *= zoomFactor;
+                        scaleFactor = Math.max(0.1, Math.min(10.0, scaleFactor));
+                        
+                        // 计算相机到观察中心的向量
+                        var cameraToCenter = mainCamera.position.minus(mainCamera.viewCenter);
+                        // 缩放向量
+                        cameraToCenter = cameraToCenter.times(1/zoomFactor);
+                        // 更新相机位置
+                        mainCamera.position = mainCamera.viewCenter.plus(cameraToCenter);
+                    }
+
+                    onReleased: {
+                        // 释放鼠标按钮
+                    }
+                }
+
+                // 自动旋转逻辑
+                Timer {
+                    interval: 50
+                    running: autoRotate
+                    repeat: true
+                    onTriggered: {
+                        var currentRotation = mainCamera.eulerRotation;
+                        currentRotation.y += 0.5; // 每帧旋转0.5度
+                        mainCamera.eulerRotation = currentRotation;
+                    }
                 }
 
                 // 使用自定义的 ModelLoader 加载模型
