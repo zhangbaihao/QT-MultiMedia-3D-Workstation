@@ -5,7 +5,7 @@
 #include "qtquick3d-viewer/quickModelLoader.h"
 #include "other-viewer/FramebufferObject.h"
 #include "other-viewer/ModelLoader.h"
-
+#include "qtquick3d-viewer/CameraController.h"
 
 int main(int argc, char *argv[])
 {
@@ -14,6 +14,7 @@ int main(int argc, char *argv[])
     // 注册QML类型
     qmlRegisterType<VideoPlayer>("QtMultiMedia3D", 1, 0, "VideoPlayer");
     qmlRegisterType<ModelLoader>("QtMultiMedia3D", 1, 0, "ModelLoader");
+    qmlRegisterType<CameraController>("QtMultiMedia3D", 1, 0, "CameraController");
     qmlRegisterType<OtherModelLoader>("QtMultiMedia3D", 1, 0, "OtherModelLoader");
     qmlRegisterType<FramebufferObject>("QtMultiMedia3D", 1, 0, "FramebufferObject");
 

@@ -210,7 +210,7 @@ ApplicationWindow {
 
         // 3D模型页面
         ModelViewerPage {
-            clip: true
+            
         }
         // 3D模型页面 (OpenGL)
         ModelViewerOther {

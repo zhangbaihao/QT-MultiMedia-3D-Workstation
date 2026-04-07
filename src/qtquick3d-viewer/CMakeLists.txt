@@ -13,10 +13,12 @@ find_package(assimp REQUIRED)
 
 set(SOURCES
     quickModelLoader.cpp
+    CameraController.cpp
 )
 
 set(HEADERS
     quickModelLoader.h
+    CameraController.h
 )
 
 add_library(qtquick3d-viewer STATIC

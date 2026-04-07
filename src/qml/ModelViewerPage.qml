@@ -31,16 +31,6 @@ Page {
     property real zoom: 1.0
     property bool autoRotate: false
 
-    // === 将相机声明移动到页面的顶层 ===
-    PerspectiveCamera {
-        id: mainCamera
-        position: Qt.vector3d(0, 0, 20)
-        fieldOfView: 45
-        eulerRotation: Qt.vector3d(0, 0, 0)
-        clipFar: 10000
-        clipNear: 1
-    }
-
     RowLayout {
         anchors.fill: parent
         spacing: 15
@@ -237,9 +227,9 @@ Page {
                                 flat: true
 
                                 onClicked: {
-                                    // 修正：这里应该使用 mainCamera
-                                    mainCamera.position = Qt.vector3d(0, 0, 20)  // 改为 20
-                                    mainCamera.eulerRotation = Qt.vector3d(0, 0, 0)
+                                    // 修正：这里应该使用 camera
+                                    camera.position = Qt.vector3d(0, 0, 20)  // 改为 20
+                                    camera.eulerRotation = Qt.vector3d(0, 0, 0)
                                     zoom = 1.0
                                     zoomSlider.value = 1.0
                                     autoRotate = false
@@ -313,14 +303,26 @@ Page {
             View3D {
                 id: view3D
                 anchors.fill: parent
-                camera: mainCamera  // 引用顶层声明的相机
+                camera: camera
 
                 // 设置场景环境
                 environment: SceneEnvironment {
                     clearColor: "#1e1e1e"
                     backgroundMode: SceneEnvironment.Color
                 }
-
+                Node{
+                    id:cameraNode
+                    // === 将相机声明移动到页面的顶层 ===
+                    PerspectiveCamera {
+                        id: camera
+                        position: model.vector3d(0, 0, 20)  // 初始位置改为更远以适应大多数模型
+                        fieldOfView: 45
+                        eulerRotation: Qt.vector3d(0, 0, 0)
+                        clipFar: 10000
+                        clipNear: 1
+                        z: 15
+                    }
+                }
                 // 添加光源
                 DirectionalLight {
                     id: light
@@ -329,105 +331,48 @@ Page {
                     brightness: 1.5
                 }
 
-                // 相机控制
-                MouseArea {
+                MouseArea{
+                    id:mouseArea
                     anchors.fill: parent
-                    acceptedButtons: Qt.LeftButton | Qt.RightButton
-
-                    property point lastMousePosLeft: Qt.point(0, 0)
-                    property point lastMousePosRight: Qt.point(0, 0)
-                    property real offsetX: 0
-                    property real offsetY: 0
-                    property real rotationX: 0
-                    property real rotationY: 0
-                    property real scaleFactor: 1.0
-                    property real translationX: 0
-                    property real translationY: 0
-                    property real autoRotateTime: 0
-                    property real rotationSpeed: 0.2
-                    property real zoomSpeed: 0.1
-                    property real panSpeed: 0.05
-
-                    onPressed: function (mouse) {
-                        if (mouse.button === Qt.LeftButton) {
-                            lastMousePosLeft = Qt.point(mouse.x, mouse.y);
-                        } else if (mouse.button === Qt.RightButton) {
-                            lastMousePosRight = Qt.point(mouse.x, mouse.y);
-                        }
+                    property int cx: 0
+                    property int cy: 0
+                    property int pressedButton: Qt.NoButton  // 保存按下的按钮
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton  // ✅ 必须添加这行！
+                    onWheel: {
+                        if(wheel.angleDelta.y>0)
+                            camera.z = camera.z+5
+                        else
+                            camera.z = camera.z-5
                     }
-
-                    onPositionChanged: function (mouse) {
-                        if (mouse.buttons & Qt.LeftButton) {
-                            var dx = mouse.x - lastMousePosLeft.x;
-                            var dy = mouse.y - lastMousePosLeft.y;
-                            
-                            // 计算旋转角度
-                            var sensitivity = rotationSpeed * 0.01;
-                            var pitch = dy * sensitivity;
-                            var yaw = dx * sensitivity;
-                            
-                            // 直接使用欧拉角旋转（暂时替代四元数）
-                            var currentRotation = mainCamera.eulerRotation;
-                            currentRotation.x += pitch * 180 / Math.PI;
-                            currentRotation.y += yaw * 180 / Math.PI;
-                            
-                            // 限制俯仰角度，避免万向锁
-                            currentRotation.x = Math.max(-89, Math.min(89, currentRotation.x));
-                            
-                            mainCamera.eulerRotation = currentRotation;
-                            
-                            lastMousePosLeft = Qt.point(mouse.x, mouse.y);
-                        } else if (mouse.buttons & Qt.RightButton) {
-                            var dx = mouse.x - lastMousePosRight.x;
-                            var dy = mouse.y - lastMousePosRight.y;
-                            
-                            // 平移相机
-                            var panX = -dx * panSpeed;
-                            var panY = dy * panSpeed;
-                            
-                            // 计算相机坐标系下的平移
-                            var cameraForward = mainCamera.position.minus(mainCamera.viewCenter).normalized();
-                            var cameraRight = Qt.vector3d.crossProduct(mainCamera.upVector, cameraForward).normalized();
-                            var cameraUp = mainCamera.upVector;
-
-                            var panOffset = cameraRight.times(panX).plus(cameraUp.times(panY));
-
-                            // 更新相机位置和观察中心
-                            mainCamera.position = mainCamera.position.plus(panOffset);
-                            mainCamera.viewCenter = mainCamera.viewCenter.plus(panOffset);
-                            
-                            lastMousePosRight = Qt.point(mouse.x, mouse.y);
-                        }
+                    onPressed: (mousePoint) => {
+                        cx = mousePoint.x
+                        cy = mousePoint.y
+                        pressedButton = mousePoint.button  // 保存按下的按钮
+                        console.log("按下按钮:", 
+                            pressedButton === Qt.LeftButton ? "左键" : 
+                            pressedButton === Qt.RightButton ? "右键" : "其他")
                     }
-
-                    onWheel: function (wheel) {
-                        // 缩放相机
-                        var zoomFactor = 1 + wheel.angleDelta.y * zoomSpeed * 0.01;
-                        scaleFactor *= zoomFactor;
-                        scaleFactor = Math.max(0.1, Math.min(10.0, scaleFactor));
-                        
-                        // 计算相机到观察中心的向量
-                        var cameraToCenter = mainCamera.position.minus(mainCamera.viewCenter);
-                        // 缩放向量
-                        cameraToCenter = cameraToCenter.times(1/zoomFactor);
-                        // 更新相机位置
-                        mainCamera.position = mainCamera.viewCenter.plus(cameraToCenter);
-                    }
-
                     onReleased: {
-                        // 释放鼠标按钮
+                        pressedButton = Qt.NoButton  // 释放时清空
                     }
-                }
-
-                // 自动旋转逻辑
-                Timer {
-                    interval: 50
-                    running: autoRotate
-                    repeat: true
-                    onTriggered: {
-                        var currentRotation = mainCamera.eulerRotation;
-                        currentRotation.y += 0.5; // 每帧旋转0.5度
-                        mainCamera.eulerRotation = currentRotation;
+                    onPositionChanged: function (mousePoint) {
+                        var intervalX = mousePoint.x-cx
+                        var intervalY = mousePoint.y-cy
+                        if (pressedButton === Qt.LeftButton) {
+                            // 左键：旋转
+                            cameraNode.eulerRotation.y = intervalX + cameraNode.eulerRotation.y
+                            cameraNode.eulerRotation.x = cameraNode.eulerRotation.x - intervalY
+                            console.log("左键旋转")
+                        } else if (pressedButton === Qt.RightButton) {
+                            // 右键：平移
+                            cameraNode.position.x = cameraNode.position.x - intervalX * 0.1
+                            cameraNode.position.y = cameraNode.position.y + intervalY * 0.1
+                            console.log("右键平移")
+                        }
+                        cx = mousePoint.x
+                        cy = mousePoint.y
+                        //这里不打印 界面不会更新旋转 QML BUG好像是
+                        console.log("Camera Euler Rotation:", cameraNode.eulerRotation)
                     }
                 }
 
@@ -476,13 +421,14 @@ Page {
                 
                 // 组件完成时添加调试信息
                 Component.onCompleted: {
-                    console.log("View3D 组件完成初始化")
-                    console.log("相机对象:", mainCamera)
-                    console.log("相机位置:", mainCamera.position)
+                    console.log("=== 调试信息 ===")
+                    console.log("1. view3D.camera:", view3D.camera)
+                    console.log("2. camera:", camera)
+                    console.log("3. 是否相同:", view3D.camera === camera)
+                    console.log("4. mainCamera位置:", camera.position)
+                    console.log("5. cameraNode旋转:", cameraNode.eulerRotation)
                 }
             }
-
-            // 鼠标交互由 OrbitCameraController 处理
 
             // 视图控制提示
             Rectangle {
@@ -597,8 +543,8 @@ Page {
     // 页面完成时添加调试信息
     Component.onCompleted: {
         console.log("=== 页面初始化完成 ===")
-        console.log("mainCamera:", mainCamera)
-        console.log("相机位置:", mainCamera.position)
-        console.log("相机旋转:", mainCamera.eulerRotation)
+        console.log("camera:", camera)
+        console.log("相机位置:", camera.position)
+        console.log("相机旋转:", camera.eulerRotation)
     }
 }
