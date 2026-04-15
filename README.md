@@ -261,3 +261,10 @@ QT-MultiMedia-3D-Workstation/
 ---
 
 *QT-MultiMedia 3D Workstation - 一个功能强大的多媒体和 3D 模型查看器应用*
+
+# 软件展示
+![alt text](8ea896647a281eb1fabfbd7ec2575252.png)
+
+![alt text](9aa1ee2d208fab0ca69ce8cff46efffe.png)
+
+![alt text](ea40af69d4b626b7aa92ec879a70a008.png)
