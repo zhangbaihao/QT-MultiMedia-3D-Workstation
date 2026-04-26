@@ -1,9 +1,14 @@
 cmake_minimum_required(VERSION 3.16)
 
-# 指定vcpkg和Qt路径
-if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-    set(CMAKE_TOOLCHAIN_FILE "D:/code/vcpkg/scripts/buildsystems/vcpkg.cmake")
+# vcpkg：与 cmake/FFMPEGImports.cmake 共用 MY_VCPKG_ROOT
+if(NOT DEFINED MY_VCPKG_ROOT OR MY_VCPKG_ROOT STREQUAL "")
+    set(MY_VCPKG_ROOT "D:/code/vcpkg" CACHE PATH "vcpkg installation root")
 endif()
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+    set(CMAKE_TOOLCHAIN_FILE "${MY_VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain")
+endif()
+
+# Qt 路径（按本机安装修改）
 set(Qt6_DIR "C:/Qt/6.10.2/msvc2022_64/lib/cmake/Qt6")
 
 project(QT-MultiMedia-3D-Workstation VERSION 1.0.0 LANGUAGES CXX)

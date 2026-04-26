@@ -1,7 +1,9 @@
+#include <QFileInfo>
 #include <QTest>
 #include <QCoreApplication>
-#include "../src/multimedia/VideoPlayer.h"
+
 #include "../src/multimedia/AudioPlayer.h"
+#include "../src/multimedia/VideoPlayer.h"
 
 class TestMultimedia : public QObject
 {
@@ -15,18 +17,22 @@ private slots:
 void TestMultimedia::testVideoPlayer()
 {
     VideoPlayer player;
-    
-    // 测试设置文件路径
-    player.setFilePath("test.mp4");
-    QCOMPARE(player.filePath(), QString("test.mp4"));
-    
-    // 测试播放控制
+
+    const QString path = QStringLiteral("test.mp4");
+    if (!QFileInfo::exists(path)) {
+        QSKIP("缺少 test.mp4：将短视频放在工作目录后再运行此用例。");
+    }
+
+    player.setFilePath(path);
+    QCOMPARE(player.filePath(), path);
+    QVERIFY(player.duration() > 0);
+
     player.play();
     QVERIFY(player.isPlaying());
-    
+
     player.pause();
     QVERIFY(!player.isPlaying());
-    
+
     player.stop();
     QVERIFY(!player.isPlaying());
 }
@@ -34,18 +40,22 @@ void TestMultimedia::testVideoPlayer()
 void TestMultimedia::testAudioPlayer()
 {
     AudioPlayer player;
-    
-    // 测试设置文件路径
-    player.setFilePath("test.mp3");
-    QCOMPARE(player.filePath(), QString("test.mp3"));
-    
-    // 测试播放控制
+
+    const QString path = QStringLiteral("test.mp3");
+    if (!QFileInfo::exists(path)) {
+        QSKIP("缺少 test.mp3：将带音频的媒体放在工作目录后再运行此用例。");
+    }
+
+    player.setFilePath(path);
+    QCOMPARE(player.filePath(), path);
+    QVERIFY(player.duration() > 0);
+
     player.play();
     QVERIFY(player.isPlaying());
-    
+
     player.pause();
     QVERIFY(!player.isPlaying());
-    
+
     player.stop();
     QVERIFY(!player.isPlaying());
 }

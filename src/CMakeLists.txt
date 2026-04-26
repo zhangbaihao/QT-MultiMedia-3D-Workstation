@@ -1,5 +1,4 @@
-# 设置vcpkg工具链文件
-set(CMAKE_TOOLCHAIN_FILE "D:/code/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
+# vcpkg 工具链由根 CMakeLists.txt 设置；MY_VCPKG_ROOT 与 FFMPEGImports.cmake 一致
 
 # 查找 Qt 模块
 find_package(Qt6 COMPONENTS Core Gui Qml Quick Widgets Multimedia Quick3D REQUIRED)
@@ -12,18 +11,13 @@ add_executable(QT-MultiMedia-3D-Workstation
 
 
 
-# 查找 Assimp 库
-set(assimp_DIR "D:/code/vcpkg/installed/x64-windows/share/assimp")
-find_package(assimp REQUIRED)
+# FFmpeg 库（用于视频播放）
+# 使用自定义模块直接从 vcpkg 创建导入目标，绕过 Qt/vcpkg FindFFmpeg 模块冲突
+include(${CMAKE_SOURCE_DIR}/cmake/FFMPEGImports.cmake)
 
-
-
-
-# 移除VTK库，使用Qt Quick 3D
-
-# 添加 Assimp 头文件搜索路径
+# 添加 vcpkg 头文件搜索路径（Assimp 等）
 target_include_directories(QT-MultiMedia-3D-Workstation PRIVATE
-    D:/code/vcpkg/installed/x64-windows/include
+    "${MY_VCPKG_ROOT}/installed/x64-windows/include"
 )
 
 # 核心模块
@@ -54,60 +48,19 @@ target_link_libraries(QT-MultiMedia-3D-Workstation PRIVATE
 
 # 打包功能
 if(WIN32)
-    # 复制 vcpkg 依赖库（根据构建类型选择正确的库文件）
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(VCPKG_BIN_DIR "D:/code/vcpkg/installed/x64-windows/debug/bin")
-        set(ASSIMP_DLL "${VCPKG_BIN_DIR}/assimp-vc143-mtd.dll")
-    else()
-        set(VCPKG_BIN_DIR "D:/code/vcpkg/installed/x64-windows/bin")
-        set(ASSIMP_DLL "${VCPKG_BIN_DIR}/assimp-vc143-mt.dll")
-    endif()
-    
-    # Assimp 依赖的其他 DLL 文件
-    set(ASSIMP_DEPENDENCIES
-        "${VCPKG_BIN_DIR}/kubazip.dll"
-        "${VCPKG_BIN_DIR}/minizip.dll"
-        "${VCPKG_BIN_DIR}/poly2tri.dll"
-        "${VCPKG_BIN_DIR}/pugixml.dll"
-    )
-    
-    # 对于 Debug 构建，还需要 zlibd1.dll
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        list(APPEND ASSIMP_DEPENDENCIES "${VCPKG_BIN_DIR}/zlibd1.dll")
-    endif()
-    
-    # 复制 Assimp 主 DLL
-    if(EXISTS ${ASSIMP_DLL})
-        add_custom_command(
-            TARGET QT-MultiMedia-3D-Workstation POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ASSIMP_DLL}" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
-        )
-    else()
-        message(WARNING "Assimp DLL not found at: ${ASSIMP_DLL}")
-    endif()
-    
-    # 复制 Assimp 依赖的其他 DLL
-    foreach(DLL ${ASSIMP_DEPENDENCIES})
-        if(EXISTS ${DLL})
-            add_custom_command(
-                TARGET QT-MultiMedia-3D-Workstation POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DLL}" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
-            )
-        else()
-            message(WARNING "Assimp dependency DLL not found at: ${DLL}")
-        endif()
-    endforeach()
-    
+    # Assimp / FFmpeg 等 DLL 由 vcpkg 工具链的 applocal.ps1 在链接后自动拷贝到可执行文件目录
+    set(_TDIR "$<TARGET_FILE_DIR:QT-MultiMedia-3D-Workstation>")
+
     # 复制 QML 文件到输出目录
     add_custom_command(
         TARGET QT-MultiMedia-3D-Workstation POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/src/qml" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/qml"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/src/qml" "${_TDIR}/qml"
     )
     
     # 复制测试模型到输出目录
     add_custom_command(
         TARGET QT-MultiMedia-3D-Workstation POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/test_models" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_models"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/test_models" "${_TDIR}/test_models"
     )
 endif()
 
@@ -127,4 +80,15 @@ qt_add_qml_module(QT-MultiMedia-3D-Workstation
     VERSION 1.0
     QML_FILES ${QML_FILES}
     RESOURCES qml.qrc
+)
+
+# FFmpeg：显式按配置链接 .lib（IMPORTED 目标在 VS 多配置 + Qt QML 目标下偶发未进最终链接命令）
+set(_FFDBG "${MY_VCPKG_ROOT}/installed/x64-windows/debug/lib")
+set(_FFREL "${MY_VCPKG_ROOT}/installed/x64-windows/lib")
+target_link_libraries(QT-MultiMedia-3D-Workstation PRIVATE
+    "$<IF:$<CONFIG:Debug>,${_FFDBG}/avutil.lib,${_FFREL}/avutil.lib>"
+    "$<IF:$<CONFIG:Debug>,${_FFDBG}/avcodec.lib,${_FFREL}/avcodec.lib>"
+    "$<IF:$<CONFIG:Debug>,${_FFDBG}/avformat.lib,${_FFREL}/avformat.lib>"
+    "$<IF:$<CONFIG:Debug>,${_FFDBG}/swscale.lib,${_FFREL}/swscale.lib>"
+    "$<IF:$<CONFIG:Debug>,${_FFDBG}/swresample.lib,${_FFREL}/swresample.lib>"
 )

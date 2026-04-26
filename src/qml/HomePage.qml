@@ -69,7 +69,7 @@ Page {
                             icon: "🎬",
                             color: "#fce4ec",
                             accentColor: "#e81123",
-                            pageIndex: 2
+                            pageIndex: 3  // MainWindow StackLayout 索引: 0-Home, 1-ModelViewer, 2-Other, 3-Video, 4-Controls
                         },
                         {
                             title: "控件展示",
@@ -77,7 +77,7 @@ Page {
                             icon: "🎨",
                             color: "#f3e5f5",
                             accentColor: "#5c2d91",
-                            pageIndex: 3
+                            pageIndex: 4  // MainWindow StackLayout 索引: 0-Home, 1-ModelViewer, 2-Other, 3-Video, 4-Controls
                         }
                     ]
 
